@@ -198,7 +198,7 @@ export default function OptionsPage() {
             className="bg-white rounded-2xl shadow-lg p-4 mt-6 animate-fade-in-up"
             style={{ animationDelay: "0.6s" }}
           >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
               <Button
                 onMouseDown={playClickSound}
                 className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
@@ -207,12 +207,21 @@ export default function OptionsPage() {
                 Tester clic
               </Button>
               <Button
-                onMouseDown={playBackSound}
+                onMouseDown={() => {
+                  console.log("Test back button clicked - immediate call")
+                  playBackSound()
+                }}
                 className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
               >
                 <Music className="w-4 h-4 mr-2" />
                 Tester retour
               </Button>
+            </div>
+
+            {/* Debug info */}
+            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+              <p>Debug: Back sound loaded = {audioStatus.backSoundLoaded ? "✅ Oui" : "❌ Non"}</p>
+              <p>Audio system ready = {audioStatus.ready ? "✅ Oui" : "❌ Non"}</p>
             </div>
           </div>
         )}

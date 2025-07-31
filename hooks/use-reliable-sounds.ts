@@ -10,7 +10,8 @@ interface AudioInstance {
 
 export function useReliableSounds() {
   const audioContextRef = useRef<AudioContext | null>(null)
-  const backSoundRef = useRef<HTMLAudioElement | null>(null)
+  const backSoundPoolRef = useRef<HTMLAudioElement[]>([])
+  const backSoundIndexRef = useRef(0)
   const [audioFilesStatus, setAudioFilesStatus] = useState({
     clickSound: { loaded: false, error: false },
     menuSound: { loaded: false, error: false },
@@ -36,46 +37,59 @@ export function useReliableSounds() {
     }
   }, [])
 
-  // Load and preload the back sound specifically
+  // Create audio pool for back sound for better reliability
   useEffect(() => {
-    const loadBackSound = () => {
-      const audio = new Audio()
+    const createBackSoundPool = () => {
+      const poolSize = 3
+      const pool: HTMLAudioElement[] = []
+      let loadedCount = 0
 
-      const onLoad = () => {
-        console.log("Back sound (fairyclick.mp3) loaded successfully")
-        setAudioFilesStatus((prev) => ({
-          ...prev,
-          backSound: { loaded: true, error: false },
-        }))
+      const checkAllLoaded = () => {
+        if (loadedCount === poolSize) {
+          console.log("Back sound pool fully loaded")
+          setAudioFilesStatus((prev) => ({
+            ...prev,
+            backSound: { loaded: true, error: false },
+          }))
+        }
       }
 
-      const onError = (e: Event) => {
-        console.warn("Back sound failed to load, will use fallback:", e)
-        setAudioFilesStatus((prev) => ({
-          ...prev,
-          backSound: { loaded: false, error: true },
-        }))
+      for (let i = 0; i < poolSize; i++) {
+        const audio = new Audio()
+
+        const onLoad = () => {
+          loadedCount++
+          console.log(`Back sound instance ${i + 1}/${poolSize} loaded`)
+          checkAllLoaded()
+        }
+
+        const onError = (e: Event) => {
+          console.warn(`Back sound instance ${i + 1} failed to load:`, e)
+          loadedCount++
+          if (loadedCount === poolSize) {
+            setAudioFilesStatus((prev) => ({
+              ...prev,
+              backSound: { loaded: false, error: true },
+            }))
+          }
+        }
+
+        // Configure audio for optimal performance
+        audio.preload = "auto"
+        audio.volume = 0.8
+        audio.crossOrigin = "anonymous"
+
+        audio.addEventListener("canplaythrough", onLoad, { once: true })
+        audio.addEventListener("error", onError, { once: true })
+
+        // Set source after event listeners
+        audio.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fairyclick-hndPdZFszE6Klei4r4ySyWDfckMVR2.mp3"
+
+        pool.push(audio)
       }
 
-      const onCanPlay = () => {
-        console.log("Back sound ready to play")
-      }
-
-      audio.addEventListener("canplaythrough", onLoad, { once: true })
-      audio.addEventListener("error", onError, { once: true })
-      audio.addEventListener("canplay", onCanPlay, { once: true })
-
-      // Configure audio for optimal performance
-      audio.preload = "auto"
-      audio.volume = 0.7
-      audio.crossOrigin = "anonymous"
-
-      // Set source last
-      audio.src = "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fairyclick-hndPdZFszE6Klei4r4ySyWDfckMVR2.mp3"
-
-      backSoundRef.current = audio
-
-      return audio
+      backSoundPoolRef.current = pool
+      return pool
     }
 
     // Try to load other audio files but don't depend on them
@@ -109,18 +123,19 @@ export function useReliableSounds() {
     }
 
     // Load all audio files
-    const backAudio = loadBackSound()
+    const backSoundPool = createBackSoundPool()
     const clickAudio = loadAudioFile("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/11L-Clic_de_bouton_girly-1754003907888-JLmi4woLnORJ8q2N7JzYlWZDfsP6Tv.mp3", "clickSound")
     const menuAudio = loadAudioFile("https://hebbkx1anhila5yf.public.blob.vercel-storage.com/girlyclick-m35wgd6n66cyCgXLprXDMXMNnmyAQY.mp3", "menuSound")
 
     return () => {
-      backAudio?.pause()
+      // Cleanup
+      backSoundPool.forEach((audio) => {
+        audio.pause()
+        audio.src = ""
+      })
+      backSoundPoolRef.current = []
       clickAudio?.pause()
       menuAudio?.pause()
-      if (backSoundRef.current) {
-        backSoundRef.current.pause()
-        backSoundRef.current = null
-      }
     }
   }, [])
 
@@ -234,7 +249,7 @@ export function useReliableSounds() {
 
       // Magical envelope
       gain.gain.setValueAtTime(0, now)
-      gain.gain.linearRampToValueAtTime(0.08, now + 0.02)
+      gain.gain.linearRampToValueAtTime(0.1, now + 0.02)
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15)
 
       osc1.type = "sine"
@@ -263,38 +278,41 @@ export function useReliableSounds() {
     playWebAudioMenuClick()
   }, [playWebAudioMenuClick])
 
-  // New back sound function with file priority
+  // Improved back sound function with pool management
   const playBackSound = useCallback(() => {
     const startTime = performance.now()
 
-    // Try to play the actual audio file first
-    if (backSoundRef.current && audioFilesStatus.backSound.loaded && !audioFilesStatus.backSound.error) {
+    console.log("playBackSound called, status:", audioFilesStatus.backSound)
+
+    // Always try Web Audio first for immediate feedback
+    playWebAudioBackClick()
+
+    // Then try to play the actual audio file if available (as enhancement)
+    if (backSoundPoolRef.current.length > 0 && audioFilesStatus.backSound.loaded) {
       try {
-        // Reset to beginning for immediate playback
-        backSoundRef.current.currentTime = 0
-        backSoundRef.current.volume = 0.7
+        const audio = backSoundPoolRef.current[backSoundIndexRef.current]
+        backSoundIndexRef.current = (backSoundIndexRef.current + 1) % backSoundPoolRef.current.length
 
-        const playPromise = backSoundRef.current.play()
+        if (audio && audio.readyState >= 2) {
+          // HAVE_CURRENT_DATA
+          audio.currentTime = 0
+          audio.volume = 0.4 // Lower volume since we also play Web Audio
 
-        if (playPromise) {
-          playPromise
-            .then(() => {
-              const endTime = performance.now()
-              console.log(`Fairy click sound played successfully in ${endTime - startTime}ms`)
-            })
-            .catch((error) => {
-              console.warn("Fairy click sound play failed, using fallback:", error)
-              playWebAudioBackClick()
-            })
+          const playPromise = audio.play()
+          if (playPromise) {
+            playPromise
+              .then(() => {
+                const endTime = performance.now()
+                console.log(`Fairy click file played successfully in ${endTime - startTime}ms`)
+              })
+              .catch((error) => {
+                console.warn("Fairy click file play failed:", error)
+              })
+          }
         }
       } catch (error) {
-        console.warn("Fairy click sound immediate play failed, using fallback:", error)
-        playWebAudioBackClick()
+        console.warn("Fairy click file immediate play failed:", error)
       }
-    } else {
-      // Use Web Audio fallback
-      console.log("Using Web Audio fallback for back sound")
-      playWebAudioBackClick()
     }
   }, [audioFilesStatus.backSound, playWebAudioBackClick])
 
@@ -302,25 +320,26 @@ export function useReliableSounds() {
   const warmUp = useCallback(() => {
     initAudioContext()
 
-    // Pre-warm the back sound if loaded
-    if (backSoundRef.current && audioFilesStatus.backSound.loaded) {
+    // Pre-warm the back sound pool if loaded
+    if (backSoundPoolRef.current.length > 0 && audioFilesStatus.backSound.loaded) {
       try {
-        backSoundRef.current.volume = 0.01
-        const playPromise = backSoundRef.current.play()
+        const audio = backSoundPoolRef.current[0]
+        if (audio && audio.readyState >= 2) {
+          audio.volume = 0.01
+          const playPromise = audio.play()
 
-        if (playPromise) {
-          playPromise
-            .then(() => {
-              if (backSoundRef.current) {
-                backSoundRef.current.pause()
-                backSoundRef.current.currentTime = 0
-                backSoundRef.current.volume = 0.7
-              }
-              console.log("Back sound warmed up successfully")
-            })
-            .catch(() => {
-              // Ignore warm-up errors
-            })
+          if (playPromise) {
+            playPromise
+              .then(() => {
+                audio.pause()
+                audio.currentTime = 0
+                audio.volume = 0.8
+                console.log("Back sound pool warmed up successfully")
+              })
+              .catch(() => {
+                // Ignore warm-up errors
+              })
+          }
         }
       } catch (error) {
         // Ignore warm-up errors
@@ -333,7 +352,7 @@ export function useReliableSounds() {
   return {
     playClickSound,
     playMenuClickSound,
-    playBackSound, // New back sound function
+    playBackSound,
     warmUp,
     audioFilesStatus,
     isReady: true,
