@@ -252,12 +252,12 @@ export default function RecettesPage() {
                   <ArrowUpDown className="w-4 h-4 mr-2" />
                   Trier par
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => handleSort("alphabetical")}
-                    className={`transition-all ${
+                    className={`transition-all px-3 py-2 h-auto ${
                       sortBy === "alphabetical"
                         ? "bg-pink-100 border-pink-300 text-pink-700"
                         : "border-gray-200 hover:bg-pink-50"
@@ -271,7 +271,7 @@ export default function RecettesPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => handleSort("time")}
-                    className={`transition-all ${
+                    className={`transition-all px-3 py-2 h-auto ${
                       sortBy === "time"
                         ? "bg-pink-100 border-pink-300 text-pink-700"
                         : "border-gray-200 hover:bg-pink-50"
