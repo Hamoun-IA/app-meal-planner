@@ -288,74 +288,70 @@ export default function RecettesPage() {
                 )}
               </div>
 
-              {/* Filter Section */}
+              {/* Combined Filter Section */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                   <Filter className="w-4 h-4 mr-2" />
-                  Filtrer par difficulté
+                  Filtres
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
-                    <Button
-                      key={difficulty}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleFilterChange("difficulty", difficulty)}
-                      className={`transition-all ${
-                        filters.difficulty.includes(difficulty)
-                          ? "bg-purple-100 border-purple-300 text-purple-700"
-                          : "border-gray-200 hover:bg-purple-50"
-                      }`}
-                    >
-                      {difficulty}
-                      {filters.difficulty.includes(difficulty) && <span className="ml-1 text-purple-500">✓</span>}
-                    </Button>
-                  ))}
-                </div>
-                {filters.difficulty.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setFilters((prev) => ({ ...prev, difficulty: [] }))}
-                    className="text-gray-500 hover:text-gray-700 mt-2 w-full"
-                  >
-                    Effacer les difficultés
-                  </Button>
-                )}
-              </div>
 
-              {/* Filter Section - Category */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
-                  <ChefHat className="w-4 h-4 mr-2" />
-                  Filtrer par type de plat
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"].map((category) => (
-                    <Button
-                      key={category}
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleFilterChange("category", category)}
-                      className={`transition-all ${
-                        filters.category.includes(category)
-                          ? "bg-blue-100 border-blue-300 text-blue-700"
-                          : "border-gray-200 hover:bg-blue-50"
-                      }`}
-                    >
-                      {category}
-                      {filters.category.includes(category) && <span className="ml-1 text-blue-500">✓</span>}
-                    </Button>
-                  ))}
+                {/* Difficulty Filters */}
+                <div className="mb-4">
+                  <h5 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Difficulté</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
+                      <Button
+                        key={difficulty}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleFilterChange("difficulty", difficulty)}
+                        className={`transition-all text-xs ${
+                          filters.difficulty.includes(difficulty)
+                            ? "bg-purple-100 border-purple-300 text-purple-700"
+                            : "border-gray-200 hover:bg-purple-50"
+                        }`}
+                      >
+                        {difficulty}
+                        {filters.difficulty.includes(difficulty) && <span className="ml-1 text-purple-500">✓</span>}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
-                {filters.category.length > 0 && (
+
+                {/* Category Filters */}
+                <div className="mb-4">
+                  <h5 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Type de plat</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"].map(
+                      (category) => (
+                        <Button
+                          key={category}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleFilterChange("category", category)}
+                          className={`transition-all text-xs ${
+                            filters.category.includes(category)
+                              ? "bg-blue-100 border-blue-300 text-blue-700"
+                              : "border-gray-200 hover:bg-blue-50"
+                          }`}
+                        >
+                          {category}
+                          {filters.category.includes(category) && <span className="ml-1 text-blue-500">✓</span>}
+                        </Button>
+                      ),
+                    )}
+                  </div>
+                </div>
+
+                {/* Clear Filters Button */}
+                {(filters.difficulty.length > 0 || filters.category.length > 0) && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setFilters((prev) => ({ ...prev, category: [] }))}
-                    className="text-gray-500 hover:text-gray-700 mt-2 w-full"
+                    onClick={clearFilters}
+                    className="text-gray-500 hover:text-gray-700 w-full"
                   >
-                    Effacer les catégories
+                    Effacer tous les filtres
                   </Button>
                 )}
               </div>
@@ -487,17 +483,6 @@ export default function RecettesPage() {
             <p className="text-gray-600 text-lg">Aucune recette trouvée 🥺</p>
             <p className="text-gray-500">Essaie avec d'autres mots-clés !</p>
           </div>
-        )}
-
-        {(filters.difficulty.length > 0 || filters.category.length > 0) && (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={clearFilters}
-            className="text-gray-500 hover:text-gray-700 mt-2 w-full"
-          >
-            Effacer tous les filtres
-          </Button>
         )}
       </div>
     </div>
