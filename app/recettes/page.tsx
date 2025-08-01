@@ -3,23 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import {
-  ArrowLeft,
-  ChefHat,
-  Clock,
-  Heart,
-  Search,
-  Users,
-  Grid3X3,
-  List,
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Filter,
-  X,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react"
+import { ArrowLeft, ChefHat, Clock, Heart, Search, Users, Grid3X3, List, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, ChevronDown, ChevronUp, Plus } from 'lucide-react'
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
@@ -167,28 +151,42 @@ export default function RecettesPage() {
             </div>
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center space-x-2 bg-white/20 rounded-full p-1">
+          <div className="flex items-center space-x-3">
+            {/* Add Recipe Button */}
             <Button
-              variant="ghost"
+              asChild
               size="sm"
-              onClick={() => setViewMode("grid")}
-              className={`rounded-full p-2 transition-all ${
-                viewMode === "grid" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
-              }`}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
             >
-              <Grid3X3 className="w-4 h-4" />
+              <Link href="/recettes/ajouter">
+                <Plus className="w-4 h-4 mr-2" />
+                Ajouter
+              </Link>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setViewMode("list")}
-              className={`rounded-full p-2 transition-all ${
-                viewMode === "list" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
-              }`}
-            >
-              <List className="w-4 h-4" />
-            </Button>
+
+            {/* View Mode Toggle */}
+            <div className="flex items-center space-x-2 bg-white/20 rounded-full p-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode("grid")}
+                className={`rounded-full p-2 transition-all ${
+                  viewMode === "grid" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
+                }`}
+              >
+                <Grid3X3 className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setViewMode("list")}
+                className={`rounded-full p-2 transition-all ${
+                  viewMode === "list" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
+                }`}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>
