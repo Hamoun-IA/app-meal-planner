@@ -1,4 +1,4 @@
-# Plan Détaillé PWA Gestion de Repas- 
+# Plan Détaillé PWA Gestion de Repas :
 
 # **Frontend \& PWA:**
 

@@ -1,4 +1,4 @@
-Phases de Développement
+Phases de Développement :
 Phase 1: Setup Initial et Architecture (Jours 1-3)
 ⦁	Création projet Next.js 14 avec TypeScript strict
 ⦁	Configuration des outils de développement (ESLint, Prettier, Husky)
