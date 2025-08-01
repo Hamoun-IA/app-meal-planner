@@ -29,6 +29,7 @@ export default function RecettesPage() {
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
   const [filters, setFilters] = useState({
     difficulty: [] as string[],
+    category: [] as string[],
   })
   const [showMobileFilters, setShowMobileFilters] = useState(false)
 
@@ -92,6 +93,7 @@ export default function RecettesPage() {
   const clearFilters = () => {
     setFilters({
       difficulty: [],
+      category: [],
     })
   }
 
@@ -101,8 +103,9 @@ export default function RecettesPage() {
       recette.category.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesDifficulty = filters.difficulty.length === 0 || filters.difficulty.includes(recette.difficulty)
+    const matchesCategory = filters.category.length === 0 || filters.category.includes(recette.category)
 
-    return matchesSearch && matchesDifficulty
+    return matchesSearch && matchesDifficulty && matchesCategory
   })
 
   const filteredAndSortedRecettes = filteredRecettes.sort((a, b) => {
@@ -203,16 +206,16 @@ export default function RecettesPage() {
               className="flex-shrink-0 p-3 border-pink-200 hover:bg-pink-50 rounded-full relative"
             >
               <Filter className="w-4 h-4" />
-              {(sortBy || filters.difficulty.length > 0) && (
+              {(sortBy || filters.difficulty.length > 0 || filters.category.length > 0) && (
                 <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                  {(sortBy ? 1 : 0) + filters.difficulty.length}
+                  {(sortBy ? 1 : 0) + filters.difficulty.length + filters.category.length}
                 </span>
               )}
             </Button>
           </div>
 
           {/* Quick indicators */}
-          {(sortBy || filters.difficulty.length > 0) && (
+          {(sortBy || filters.difficulty.length > 0 || filters.category.length > 0) && (
             <div className="flex items-center space-x-2 text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
               {sortBy && (
                 <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs flex items-center">
@@ -223,6 +226,11 @@ export default function RecettesPage() {
               {filters.difficulty.length > 0 && (
                 <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
                   {filters.difficulty.length} difficulté{filters.difficulty.length > 1 ? "s" : ""}
+                </span>
+              )}
+              {filters.category.length > 0 && (
+                <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                  {filters.category.length} catégorie{filters.category.length > 1 ? "s" : ""}
                 </span>
               )}
             </div>
@@ -308,10 +316,46 @@ export default function RecettesPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={clearFilters}
+                    onClick={() => setFilters((prev) => ({ ...prev, difficulty: [] }))}
                     className="text-gray-500 hover:text-gray-700 mt-2 w-full"
                   >
-                    Effacer les filtres
+                    Effacer les difficultés
+                  </Button>
+                )}
+              </div>
+
+              {/* Filter Section - Category */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <ChefHat className="w-4 h-4 mr-2" />
+                  Filtrer par type de plat
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"].map((category) => (
+                    <Button
+                      key={category}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleFilterChange("category", category)}
+                      className={`transition-all ${
+                        filters.category.includes(category)
+                          ? "bg-blue-100 border-blue-300 text-blue-700"
+                          : "border-gray-200 hover:bg-blue-50"
+                      }`}
+                    >
+                      {category}
+                      {filters.category.includes(category) && <span className="ml-1 text-blue-500">✓</span>}
+                    </Button>
+                  ))}
+                </div>
+                {filters.category.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setFilters((prev) => ({ ...prev, category: [] }))}
+                    className="text-gray-500 hover:text-gray-700 mt-2 w-full"
+                  >
+                    Effacer les catégories
                   </Button>
                 )}
               </div>
@@ -443,6 +487,17 @@ export default function RecettesPage() {
             <p className="text-gray-600 text-lg">Aucune recette trouvée 🥺</p>
             <p className="text-gray-500">Essaie avec d'autres mots-clés !</p>
           </div>
+        )}
+
+        {(filters.difficulty.length > 0 || filters.category.length > 0) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={clearFilters}
+            className="text-gray-500 hover:text-gray-700 mt-2 w-full"
+          >
+            Effacer tous les filtres
+          </Button>
         )}
       </div>
     </div>
