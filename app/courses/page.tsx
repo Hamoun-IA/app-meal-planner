@@ -53,6 +53,7 @@ export default function CoursesPage() {
 
   const handleSelectWithCategory = (name: string, category: string) => {
     setSelectedItemCategory(category);
+    // Le menu se ferme automatiquement grâce au composant IngredientAutocomplete
   };
 
   const handleAddItem = () => {

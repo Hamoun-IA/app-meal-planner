@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Search, ChevronDown, X } from "lucide-react";
-import { useIngredientSuggestions, IngredientSuggestion } from "@/hooks/use-ingredient-suggestions";
+import {
+  useIngredientSuggestions,
+  IngredientSuggestion,
+} from "@/hooks/use-ingredient-suggestions";
 
 interface IngredientAutocompleteProps {
   value: string;
@@ -46,6 +49,20 @@ export const IngredientAutocomplete: React.FC<IngredientAutocompleteProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Fermer le menu quand la valeur change (si c'est une sélection)
+  useEffect(() => {
+    if (value && isOpen) {
+      // Si la valeur a changé et qu'elle correspond à une suggestion, fermer le menu
+      const matchingSuggestion = suggestionsWithCategories.find(
+        suggestion => suggestion.name.toLowerCase() === value.toLowerCase()
+      );
+      if (matchingSuggestion) {
+        setIsOpen(false);
+        setSelectedCategory(null);
+      }
+    }
+  }, [value, isOpen, suggestionsWithCategories]);
+
   // Gérer les touches clavier
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
@@ -73,9 +90,13 @@ export const IngredientAutocomplete: React.FC<IngredientAutocompleteProps> = ({
         onSelectWithCategory(suggestion.name, suggestion.category);
       }
     }
+    // Fermer le menu immédiatement
     setIsOpen(false);
     setSelectedCategory(null);
-    inputRef.current?.focus();
+    // Focus sur l'input après un court délai pour s'assurer que le menu est fermé
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 10);
   };
 
   const handleInputFocus = () => {
