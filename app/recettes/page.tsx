@@ -3,7 +3,19 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { ArrowLeft, ChefHat, Clock, Heart, Search, Users, Grid3X3, List } from "lucide-react"
+import {
+  ArrowLeft,
+  ChefHat,
+  Clock,
+  Heart,
+  Search,
+  Users,
+  Grid3X3,
+  List,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
@@ -11,6 +23,8 @@ export default function RecettesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const { playBackSound } = useAppSoundsSimple()
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+  const [sortBy, setSortBy] = useState<"alphabetical" | "time" | null>(null)
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -65,6 +79,31 @@ export default function RecettesPage() {
       recette.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       recette.category.toLowerCase().includes(searchTerm.toLowerCase()),
   )
+
+  const filteredAndSortedRecettes = filteredRecettes.sort((a, b) => {
+    if (!sortBy) return 0
+
+    let comparison = 0
+
+    if (sortBy === "alphabetical") {
+      comparison = a.title.localeCompare(b.title)
+    } else if (sortBy === "time") {
+      const timeA = Number.parseInt(a.time.replace(" min", ""))
+      const timeB = Number.parseInt(b.time.replace(" min", ""))
+      comparison = timeA - timeB
+    }
+
+    return sortOrder === "asc" ? comparison : -comparison
+  })
+
+  const handleSort = (criteria: "alphabetical" | "time") => {
+    if (sortBy === criteria) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc")
+    } else {
+      setSortBy(criteria)
+      setSortOrder("asc")
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -133,11 +172,60 @@ export default function RecettesPage() {
           </div>
         </div>
 
+        {/* Sort Controls */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-gray-700 flex items-center">
+              <ArrowUpDown className="w-4 h-4 mr-2" />
+              Trier par :
+            </h3>
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSort("alphabetical")}
+                className={`transition-all ${
+                  sortBy === "alphabetical"
+                    ? "bg-pink-100 border-pink-300 text-pink-700"
+                    : "border-gray-200 hover:bg-pink-50"
+                }`}
+              >
+                <span className="mr-2">Alphabétique</span>
+                {sortBy === "alphabetical" &&
+                  (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleSort("time")}
+                className={`transition-all ${
+                  sortBy === "time" ? "bg-pink-100 border-pink-300 text-pink-700" : "border-gray-200 hover:bg-pink-50"
+                }`}
+              >
+                <Clock className="w-3 h-3 mr-2" />
+                <span className="mr-2">Temps</span>
+                {sortBy === "time" &&
+                  (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+              </Button>
+              {sortBy && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSortBy(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+
         {/* Recipe Display */}
         {viewMode === "grid" ? (
           // Mode Grille (existant)
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {filteredRecettes.map((recette, index) => (
+            {filteredAndSortedRecettes.map((recette, index) => (
               <div
                 key={recette.id}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 animate-fade-in-up"
@@ -185,7 +273,7 @@ export default function RecettesPage() {
         ) : (
           // Mode Liste (nouveau)
           <div className="space-y-4">
-            {filteredRecettes.map((recette, index) => (
+            {filteredAndSortedRecettes.map((recette, index) => (
               <div
                 key={recette.id}
                 className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 animate-fade-in-up"
@@ -239,7 +327,7 @@ export default function RecettesPage() {
           </div>
         )}
 
-        {filteredRecettes.length === 0 && (
+        {filteredAndSortedRecettes.length === 0 && (
           <div className="text-center py-12">
             <ChefHat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg">Aucune recette trouvée 🥺</p>
