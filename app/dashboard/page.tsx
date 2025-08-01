@@ -2,6 +2,9 @@
 
 import { Button } from "@/components/ui/button"
 import { TransitionOverlay } from "@/components/transition-overlay"
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
+import { PWAUpdatePrompt } from "@/components/pwa-update-prompt"
+import { OfflineIndicator } from "@/components/offline-indicator"
 import { Calendar, ChefHat, ShoppingCart, Settings, Sparkles } from "lucide-react"
 import { useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
@@ -93,6 +96,11 @@ export default function Dashboard() {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 p-4 relative overflow-hidden">
+        {/* PWA Components */}
+        <OfflineIndicator />
+        <PWAUpdatePrompt />
+        <PWAInstallPrompt />
+
         {/* Background particles */}
         <div className="absolute top-20 left-20 w-16 h-16 bg-pink-200/30 rounded-full blur-xl animate-float-slow"></div>
         <div className="absolute top-40 right-32 w-12 h-12 bg-rose-200/40 rounded-full blur-lg animate-float-medium delay-1000"></div>

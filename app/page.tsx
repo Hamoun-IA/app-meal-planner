@@ -3,9 +3,29 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { useEffect } from "react"
 
 export default function HomePage() {
   const { playClickSound } = useAppSoundsSimple()
+
+  // Enregistrer le Service Worker
+  useEffect(() => {
+    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.log("Service Worker enregistré avec succès:", registration.scope)
+
+          // Vérifier les mises à jour
+          registration.addEventListener("updatefound", () => {
+            console.log("Nouvelle version du Service Worker trouvée")
+          })
+        })
+        .catch((error) => {
+          console.error("Échec de l'enregistrement du Service Worker:", error)
+        })
+    }
+  }, [])
 
   const handleButtonClick = () => {
     console.log("Button clicked!")
