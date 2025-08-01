@@ -474,8 +474,11 @@ export default function RecettesPage() {
                     </span>
                   </div>
 
-                  <Button className="w-full mt-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
-                    Voir la recette
+                  <Button
+                    asChild
+                    className="w-full mt-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                  >
+                    <Link href={`/recettes/${recette.id}`}>Voir la recette</Link>
                   </Button>
                 </div>
               </div>
@@ -525,10 +528,11 @@ export default function RecettesPage() {
                       </div>
 
                       <Button
+                        asChild
                         size="sm"
                         className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 flex-shrink-0"
                       >
-                        Voir
+                        <Link href={`/recettes/${recette.id}`}>Voir</Link>
                       </Button>
                     </div>
                   </div>
