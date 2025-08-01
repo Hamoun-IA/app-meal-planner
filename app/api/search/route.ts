@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
     // Validation des paramètres
     const validatedParams = SearchQuerySchema.parse({
       query,
-      cuisine,
-      difficulty,
+      cuisine: cuisine || undefined,
+      difficulty: difficulty || undefined,
       maxPrepTime,
       maxCookTime,
       maxCalories,

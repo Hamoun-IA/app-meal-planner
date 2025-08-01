@@ -1,28 +1,51 @@
+// =============================================================================
+// SCRIPT DE TEST RECHERCHE - ASSISTANTE BABOUNETTE
+// =============================================================================
+
 import { simpleRagService } from '../lib/rag-service-simple';
 
 async function testSearch() {
-  console.log('🔍 Test de la recherche...');
-
   try {
+    console.log('🔍 Test de recherche RAG...');
+    
     // Test 1: Recherche simple
-    console.log('1. Test de recherche "risotto"...');
-    const results = await simpleRagService.searchRecipes('risotto', {}, 10);
-    console.log(`✅ ${results.length} résultats trouvés`);
-
-    if (results.length > 0) {
-      console.log(`   Premier résultat: ${results[0].recipe.title}`);
-    }
+    console.log('\n📝 Test 1: Recherche "risotto"');
+    const results1 = await simpleRagService.searchRecipes('risotto', {}, 10);
+    console.log(`✅ Résultats trouvés: ${results1.length}`);
+    results1.forEach((result, index) => {
+      console.log(`  ${index + 1}. ${result.recipe.title} (score: ${result.score})`);
+    });
 
     // Test 2: Recherche avec filtre
-    console.log('2. Test de recherche avec filtre cuisine...');
-    const resultsWithFilter = await simpleRagService.searchRecipes('salade', { cuisine: 'french' }, 10);
-    console.log(`✅ ${resultsWithFilter.length} résultats avec filtre`);
+    console.log('\n📝 Test 2: Recherche "salade" avec filtre cuisine française');
+    const results2 = await simpleRagService.searchRecipes('salade', { cuisine: 'french' }, 10);
+    console.log(`✅ Résultats trouvés: ${results2.length}`);
+    results2.forEach((result, index) => {
+      console.log(`  ${index + 1}. ${result.recipe.title} (score: ${result.score})`);
+    });
 
-    console.log('🎉 Tous les tests de recherche passés !');
+    // Test 3: Recherche avec filtre difficulté
+    console.log('\n📝 Test 3: Recherche "riz" avec filtre difficulté débutant');
+    const results3 = await simpleRagService.searchRecipes('riz', { difficulty: 'beginner' }, 10);
+    console.log(`✅ Résultats trouvés: ${results3.length}`);
+    results3.forEach((result, index) => {
+      console.log(`  ${index + 1}. ${result.recipe.title} (score: ${result.score})`);
+    });
 
+    console.log('\n✅ Tests de recherche terminés avec succès');
   } catch (error) {
-    console.error('❌ Erreur:', error);
+    console.error('❌ Erreur lors du test:', error);
   }
 }
 
-testSearch(); 
+if (require.main === module) {
+  testSearch()
+    .then(() => {
+      console.log('\n✅ Script de test terminé');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('❌ Erreur:', error);
+      process.exit(1);
+    });
+} 
