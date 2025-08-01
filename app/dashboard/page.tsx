@@ -6,7 +6,7 @@ import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { PWAUpdatePrompt } from "@/components/pwa-update-prompt"
 import { OfflineIndicator } from "@/components/offline-indicator"
 import { Calendar, ChefHat, ShoppingCart, Settings, Sparkles } from "lucide-react"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
@@ -14,8 +14,14 @@ export default function Dashboard() {
   const [showTransition, setShowTransition] = useState(false)
   const [targetHref, setTargetHref] = useState("")
   const [clickedButton, setClickedButton] = useState<number | null>(null)
+  const [swSupported, setSWSupported] = useState(false)
   const router = useRouter()
   const { playMenuClickSound } = useAppSoundsSimple()
+
+  useEffect(() => {
+    // Vérifier le support des Service Workers
+    setSWSupported("serviceWorker" in navigator)
+  }, [])
 
   const handleMenuClick = useCallback(
     (href: string, buttonId: number) => {
@@ -96,10 +102,14 @@ export default function Dashboard() {
   return (
     <>
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 p-4 relative overflow-hidden">
-        {/* PWA Components */}
+        {/* PWA Components - Afficher seulement si SW supporté */}
         <OfflineIndicator />
-        <PWAUpdatePrompt />
-        <PWAInstallPrompt />
+        {swSupported && (
+          <>
+            <PWAUpdatePrompt />
+            <PWAInstallPrompt />
+          </>
+        )}
 
         {/* Background particles */}
         <div className="absolute top-20 left-20 w-16 h-16 bg-pink-200/30 rounded-full blur-xl animate-float-slow"></div>

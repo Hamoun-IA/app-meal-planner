@@ -8,22 +8,53 @@ import { useEffect } from "react"
 export default function HomePage() {
   const { playClickSound } = useAppSoundsSimple()
 
-  // Enregistrer le Service Worker
+  // Enregistrer le Service Worker avec gestion d'erreur améliorée
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
+      // Vérifier d'abord si le fichier SW existe
+      fetch("/sw.js", { method: "HEAD" })
+        .then((response) => {
+          if (response.ok && response.headers.get("content-type")?.includes("javascript")) {
+            // Le fichier existe et a le bon MIME type
+            return navigator.serviceWorker.register("/sw.js", {
+              scope: "/",
+              updateViaCache: "none", // Toujours vérifier les mises à jour
+            })
+          } else {
+            console.log("Service Worker non disponible dans cet environnement")
+            return null
+          }
+        })
         .then((registration) => {
-          console.log("Service Worker enregistré avec succès:", registration.scope)
+          if (registration) {
+            console.log("Service Worker enregistré avec succès:", registration.scope)
 
-          // Vérifier les mises à jour
-          registration.addEventListener("updatefound", () => {
-            console.log("Nouvelle version du Service Worker trouvée")
-          })
+            // Vérifier les mises à jour
+            registration.addEventListener("updatefound", () => {
+              console.log("Nouvelle version du Service Worker trouvée")
+              const newWorker = registration.installing
+              if (newWorker) {
+                newWorker.addEventListener("statechange", () => {
+                  if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                    console.log("Nouvelle version prête à être activée")
+                    // Optionnel: notifier l'utilisateur qu'une mise à jour est disponible
+                  }
+                })
+              }
+            })
+
+            // Écouter les changements d'état
+            registration.addEventListener("statechange", () => {
+              console.log("État du Service Worker:", registration.active?.state)
+            })
+          }
         })
         .catch((error) => {
-          console.error("Échec de l'enregistrement du Service Worker:", error)
+          console.log("Service Worker non supporté ou non disponible:", error.message)
+          // Ne pas afficher d'erreur à l'utilisateur, juste continuer sans SW
         })
+    } else {
+      console.log("Service Workers non supportés dans ce navigateur")
     }
   }, [])
 

@@ -20,9 +20,14 @@ export function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false)
   const [isIOS, setIsIOS] = useState(false)
   const [isStandalone, setIsStandalone] = useState(false)
+  const [swSupported, setSWSupported] = useState(false)
   const { playClickSound } = useAppSoundsSimple()
 
   useEffect(() => {
+    // Vérifier le support des Service Workers
+    const swSupport = "serviceWorker" in navigator
+    setSWSupported(swSupport)
+
     // Détecter iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
     setIsIOS(iOS)
@@ -38,32 +43,34 @@ export function PWAInstallPrompt() {
 
     setIsInstalled(hasBeenInstalled || standalone)
 
-    // Écouter l'événement beforeinstallprompt
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault()
-      setDeferredPrompt(e as BeforeInstallPromptEvent)
+    // Écouter l'événement beforeinstallprompt seulement si SW supporté
+    if (swSupport) {
+      const handleBeforeInstallPrompt = (e: Event) => {
+        e.preventDefault()
+        setDeferredPrompt(e as BeforeInstallPromptEvent)
 
-      // Afficher le prompt seulement si pas déjà installé et pas déjà refusé
-      if (!hasBeenInstalled && !hasBeenDismissed && !standalone) {
-        // Attendre un peu avant d'afficher le prompt
-        setTimeout(() => setShowPrompt(true), 3000)
+        // Afficher le prompt seulement si pas déjà installé et pas déjà refusé
+        if (!hasBeenInstalled && !hasBeenDismissed && !standalone) {
+          // Attendre un peu avant d'afficher le prompt
+          setTimeout(() => setShowPrompt(true), 3000)
+        }
       }
-    }
 
-    // Écouter l'installation
-    const handleAppInstalled = () => {
-      setIsInstalled(true)
-      setShowPrompt(false)
-      localStorage.setItem("pwa-installed", "true")
-      console.log("PWA installée avec succès!")
-    }
+      // Écouter l'installation
+      const handleAppInstalled = () => {
+        setIsInstalled(true)
+        setShowPrompt(false)
+        localStorage.setItem("pwa-installed", "true")
+        console.log("PWA installée avec succès!")
+      }
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-    window.addEventListener("appinstalled", handleAppInstalled)
+      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+      window.addEventListener("appinstalled", handleAppInstalled)
 
-    return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-      window.removeEventListener("appinstalled", handleAppInstalled)
+      return () => {
+        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
+        window.removeEventListener("appinstalled", handleAppInstalled)
+      }
     }
   }, [])
 
@@ -97,8 +104,8 @@ export function PWAInstallPrompt() {
     localStorage.setItem("pwa-dismissed", "true")
   }
 
-  // Ne pas afficher si déjà installé ou en mode standalone
-  if (isInstalled || isStandalone || !showPrompt) {
+  // Ne pas afficher si déjà installé, en mode standalone, ou si SW non supporté
+  if (isInstalled || isStandalone || !showPrompt || !swSupported) {
     return null
   }
 
@@ -117,7 +124,7 @@ export function PWAInstallPrompt() {
             <p className="text-xs text-gray-600 mb-3">
               {isIOS
                 ? "Ajoute Babounette à ton écran d'accueil pour un accès rapide !"
-                : "Installe l'app pour une expérience optimale et un accès hors ligne !"}
+                : "Installe l'app pour une expérience optimale !"}
             </p>
 
             {isIOS ? (

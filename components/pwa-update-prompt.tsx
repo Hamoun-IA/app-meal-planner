@@ -2,14 +2,20 @@
 
 import { Button } from "@/components/ui/button"
 import { RefreshCw, X } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { usePWAUpdate } from "@/hooks/use-pwa-update"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
 export function PWAUpdatePrompt() {
   const { updateAvailable, updateApp } = usePWAUpdate()
   const [dismissed, setDismissed] = useState(false)
+  const [swSupported, setSWSupported] = useState(false)
   const { playClickSound } = useAppSoundsSimple()
+
+  useEffect(() => {
+    // Vérifier le support des Service Workers
+    setSWSupported("serviceWorker" in navigator)
+  }, [])
 
   const handleUpdate = () => {
     playClickSound()
@@ -21,7 +27,8 @@ export function PWAUpdatePrompt() {
     setDismissed(true)
   }
 
-  if (!updateAvailable || dismissed) return null
+  // Ne pas afficher si pas de mise à jour, déjà fermé, ou SW non supporté
+  if (!updateAvailable || dismissed || !swSupported) return null
 
   return (
     <div className="fixed top-4 left-4 right-4 z-50 animate-fade-in-up">
