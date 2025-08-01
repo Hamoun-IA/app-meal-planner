@@ -1,4 +1,4 @@
-import type { Config } from "tailwindcss"
+import type { Config } from "tailwindcss";
 
 const config = {
   darkMode: ["class"],
@@ -101,10 +101,14 @@ const config = {
         },
         spiral: {
           "0%": { transform: "rotate(0deg) translateX(20px) rotate(0deg)" },
-          "100%": { transform: "rotate(360deg) translateX(20px) rotate(-360deg)" },
+          "100%": {
+            transform: "rotate(360deg) translateX(20px) rotate(-360deg)",
+          },
         },
         "title-glow": {
-          "0%, 100%": { filter: "drop-shadow(0 0 5px rgba(236, 72, 153, 0.3))" },
+          "0%, 100%": {
+            filter: "drop-shadow(0 0 5px rgba(236, 72, 153, 0.3))",
+          },
           "50%": { filter: "drop-shadow(0 0 20px rgba(236, 72, 153, 0.6))" },
         },
         "bounce-gentle": {
@@ -180,8 +184,14 @@ const config = {
           "100%": { opacity: "1", transform: "scale(1)" },
         },
         "logo-pulse": {
-          "0%, 100%": { transform: "scale(1)", boxShadow: "0 0 20px rgba(236, 72, 153, 0.4)" },
-          "50%": { transform: "scale(1.05)", boxShadow: "0 0 40px rgba(236, 72, 153, 0.8)" },
+          "0%, 100%": {
+            transform: "scale(1)",
+            boxShadow: "0 0 20px rgba(236, 72, 153, 0.4)",
+          },
+          "50%": {
+            transform: "scale(1.05)",
+            boxShadow: "0 0 40px rgba(236, 72, 153, 0.8)",
+          },
         },
         "logo-bounce": {
           "0%, 100%": { transform: "translateY(0)" },
@@ -263,7 +273,8 @@ const config = {
         wave: "wave 4s ease-in-out infinite",
         "page-enter": "page-enter 1s ease-out",
         "content-enter": "content-enter 1.2s ease-out 0.3s both",
-        "title-special": "title-special 1.5s ease-out 0.6s both, title-glow 3s ease-in-out 2s infinite",
+        "title-special":
+          "title-special 1.5s ease-out 0.6s both, title-glow 3s ease-in-out 2s infinite",
         "hearts-enter": "hearts-enter 1s ease-out 0.9s both",
         "hearts-enter-delayed": "hearts-enter-delayed 1s ease-out 1.2s both",
         "button-enter": "button-enter 1s ease-out 1.5s both",
@@ -289,6 +300,6 @@ const config = {
     },
   },
   plugins: [require("tailwindcss-animate")],
-} satisfies Config
+} satisfies Config;
 
-export default config
+export default config;

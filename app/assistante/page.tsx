@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import Link from "next/link"
-import { ArrowLeft, Send, Sparkles, Mic } from "lucide-react"
-import { useState } from "react"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import Link from "next/link";
+import { ArrowLeft, Send, Sparkles, Mic } from "lucide-react";
+import { useState } from "react";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 
 export default function AssistantePage() {
-  const [message, setMessage] = useState("")
+  const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -16,28 +16,31 @@ export default function AssistantePage() {
       isBot: true,
       time: "10:30",
     },
-  ])
-  const [isRecording, setIsRecording] = useState(false)
+  ]);
+  const [isRecording, setIsRecording] = useState(false);
 
-  const { playBackSound } = useAppSoundsSimple()
+  const { playBackSound } = useAppSoundsSimple();
 
   const handleBackClick = () => {
-    console.log("Back button clicked!")
-    playBackSound()
-  }
+    console.log("Back button clicked!");
+    playBackSound();
+  };
 
   const handleSendMessage = () => {
-    if (!message.trim()) return
+    if (!message.trim()) return;
 
     const newMessage = {
       id: messages.length + 1,
       text: message,
       isBot: false,
-      time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-    }
+      time: new Date().toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+    };
 
-    setMessages([...messages, newMessage])
-    setMessage("")
+    setMessages([...messages, newMessage]);
+    setMessage("");
 
     // Simulation de réponse de l'assistante
     setTimeout(() => {
@@ -45,22 +48,25 @@ export default function AssistantePage() {
         id: messages.length + 2,
         text: "C'est une excellente question ! ✨ Laisse-moi réfléchir à la meilleure façon de t'aider avec ça 💕",
         isBot: true,
-        time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-      }
-      setMessages((prev) => [...prev, botResponse])
-    }, 1000)
-  }
+        time: new Date().toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      };
+      setMessages((prev) => [...prev, botResponse]);
+    }, 1000);
+  };
 
   const handleVoiceMessage = () => {
-    setIsRecording(!isRecording)
+    setIsRecording(!isRecording);
     if (!isRecording) {
-      console.log("Démarrage de l'enregistrement vocal...")
+      console.log("Démarrage de l'enregistrement vocal...");
       // Ici on pourrait implémenter la logique d'enregistrement
     } else {
-      console.log("Arrêt de l'enregistrement vocal...")
+      console.log("Arrêt de l'enregistrement vocal...");
       // Ici on pourrait traiter l'audio enregistré
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -88,7 +94,9 @@ export default function AssistantePage() {
               <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-white font-semibold text-lg">Assistante Babounette</h1>
+              <h1 className="text-white font-semibold text-lg">
+                Assistante Babounette
+              </h1>
               <p className="text-white/80 text-sm">En ligne ✨</p>
             </div>
           </div>
@@ -99,7 +107,10 @@ export default function AssistantePage() {
       <div className="max-w-4xl mx-auto p-4 pb-24">
         <div className="space-y-4">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.isBot ? "justify-start" : "justify-end"} animate-fade-in-up`}>
+            <div
+              key={msg.id}
+              className={`flex ${msg.isBot ? "justify-start" : "justify-end"} animate-fade-in-up`}
+            >
               <div
                 className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg ${
                   msg.isBot
@@ -108,7 +119,11 @@ export default function AssistantePage() {
                 }`}
               >
                 <p className="text-sm">{msg.text}</p>
-                <p className={`text-xs mt-1 ${msg.isBot ? "text-gray-500" : "text-white/70"}`}>{msg.time}</p>
+                <p
+                  className={`text-xs mt-1 ${msg.isBot ? "text-gray-500" : "text-white/70"}`}
+                >
+                  {msg.time}
+                </p>
               </div>
             </div>
           ))}
@@ -144,5 +159,5 @@ export default function AssistantePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

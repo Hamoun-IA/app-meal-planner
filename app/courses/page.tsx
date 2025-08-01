@@ -1,20 +1,29 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import Link from "next/link"
-import { ArrowLeft, Plus, ShoppingCart, Trash2, Edit2, Settings, X, Check } from "lucide-react"
-import { useState } from "react"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Plus,
+  ShoppingCart,
+  Trash2,
+  Edit2,
+  Settings,
+  X,
+  Check,
+} from "lucide-react";
+import { useState } from "react";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 
 export default function CoursesPage() {
-  const [newItem, setNewItem] = useState("")
-  const [newCategory, setNewCategory] = useState("")
-  const [editingCategory, setEditingCategory] = useState<string | null>(null)
-  const [editCategoryName, setEditCategoryName] = useState("")
-  const [showCategoryManager, setShowCategoryManager] = useState(false)
-  const [selectedCategory, setSelectedCategory] = useState("Divers")
+  const [newItem, setNewItem] = useState("");
+  const [newCategory, setNewCategory] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [editCategoryName, setEditCategoryName] = useState("");
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("Divers");
 
   const [categories, setCategories] = useState([
     "Produits laitiers",
@@ -27,7 +36,7 @@ export default function CoursesPage() {
     "Hygiène & Beauté",
     "Entretien",
     "Divers",
-  ])
+  ]);
 
   const [items, setItems] = useState([
     { id: 1, name: "Lait", completed: false, category: "Produits laitiers" },
@@ -35,110 +44,132 @@ export default function CoursesPage() {
     { id: 3, name: "Pommes", completed: false, category: "Fruits & Légumes" },
     { id: 4, name: "Chocolat", completed: false, category: "Épicerie sucrée" },
     { id: 5, name: "Yaourts", completed: true, category: "Produits laitiers" },
-  ])
+  ]);
 
-  const { playBackSound, playClickSound } = useAppSoundsSimple()
+  const { playBackSound, playClickSound } = useAppSoundsSimple();
 
   const handleBackClick = () => {
-    console.log("Back button clicked!")
-    playBackSound()
-  }
+    console.log("Back button clicked!");
+    playBackSound();
+  };
 
   const addItem = () => {
-    if (!newItem.trim()) return
+    if (!newItem.trim()) return;
 
-    playClickSound()
+    playClickSound();
     const item = {
       id: Date.now(),
       name: newItem,
       completed: false,
       category: selectedCategory,
-    }
+    };
 
-    setItems([...items, item])
-    setNewItem("")
-  }
+    setItems([...items, item]);
+    setNewItem("");
+  };
 
   const toggleItem = (id: number) => {
-    playClickSound()
-    setItems(items.map((item) => (item.id === id ? { ...item, completed: !item.completed } : item)))
-  }
+    playClickSound();
+    setItems(
+      items.map((item) =>
+        item.id === id ? { ...item, completed: !item.completed } : item
+      )
+    );
+  };
 
   const deleteItem = (id: number) => {
-    playClickSound()
-    setItems(items.filter((item) => item.id !== id))
-  }
+    playClickSound();
+    setItems(items.filter((item) => item.id !== id));
+  };
 
   // Gestion des catégories
   const addCategory = () => {
-    if (!newCategory.trim() || categories.includes(newCategory)) return
+    if (!newCategory.trim() || categories.includes(newCategory)) return;
 
-    playClickSound()
-    setCategories([...categories, newCategory])
-    setNewCategory("")
-  }
+    playClickSound();
+    setCategories([...categories, newCategory]);
+    setNewCategory("");
+  };
 
   const deleteCategory = (categoryToDelete: string) => {
-    if (categoryToDelete === "Divers") return // Empêcher la suppression de "Divers"
+    if (categoryToDelete === "Divers") return; // Empêcher la suppression de "Divers"
 
-    playClickSound()
+    playClickSound();
 
     // Déplacer tous les articles de cette catégorie vers "Divers"
-    setItems(items.map((item) => (item.category === categoryToDelete ? { ...item, category: "Divers" } : item)))
+    setItems(
+      items.map((item) =>
+        item.category === categoryToDelete
+          ? { ...item, category: "Divers" }
+          : item
+      )
+    );
 
     // Supprimer la catégorie
-    setCategories(categories.filter((cat) => cat !== categoryToDelete))
+    setCategories(categories.filter((cat) => cat !== categoryToDelete));
 
     // Si c'était la catégorie sélectionnée, basculer vers "Divers"
     if (selectedCategory === categoryToDelete) {
-      setSelectedCategory("Divers")
+      setSelectedCategory("Divers");
     }
-  }
+  };
 
   const startEditCategory = (category: string) => {
-    playClickSound()
-    setEditingCategory(category)
-    setEditCategoryName(category)
-  }
+    playClickSound();
+    setEditingCategory(category);
+    setEditCategoryName(category);
+  };
 
   const saveEditCategory = () => {
     if (!editCategoryName.trim() || editCategoryName === editingCategory) {
-      setEditingCategory(null)
-      return
+      setEditingCategory(null);
+      return;
     }
 
     if (categories.includes(editCategoryName)) {
-      alert("Cette catégorie existe déjà !")
-      return
+      alert("Cette catégorie existe déjà !");
+      return;
     }
 
-    playClickSound()
+    playClickSound();
 
     // Mettre à jour le nom de la catégorie
-    setCategories(categories.map((cat) => (cat === editingCategory ? editCategoryName : cat)))
+    setCategories(
+      categories.map((cat) =>
+        cat === editingCategory ? editCategoryName : cat
+      )
+    );
 
     // Mettre à jour les articles avec le nouveau nom de catégorie
-    setItems(items.map((item) => (item.category === editingCategory ? { ...item, category: editCategoryName } : item)))
+    setItems(
+      items.map((item) =>
+        item.category === editingCategory
+          ? { ...item, category: editCategoryName }
+          : item
+      )
+    );
 
     // Mettre à jour la catégorie sélectionnée si nécessaire
     if (selectedCategory === editingCategory) {
-      setSelectedCategory(editCategoryName)
+      setSelectedCategory(editCategoryName);
     }
 
-    setEditingCategory(null)
-    setEditCategoryName("")
-  }
+    setEditingCategory(null);
+    setEditCategoryName("");
+  };
 
   const cancelEditCategory = () => {
-    playClickSound()
-    setEditingCategory(null)
-    setEditCategoryName("")
-  }
+    playClickSound();
+    setEditingCategory(null);
+    setEditCategoryName("");
+  };
 
-  const completedCount = items.filter((item) => item.completed).length
-  const totalCount = items.length
+  const completedCount = items.filter((item) => item.completed).length;
+  const totalCount = items.length;
 
-  const displayedCategories = categories.filter((category) => items.some((item) => item.category === category))
+  const displayedCategories = categories.filter((category) =>
+    items.some((item) => item.category === category)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -164,7 +195,9 @@ export default function CoursesPage() {
             <div className="flex items-center space-x-3">
               <ShoppingCart className="w-6 h-6 text-white" />
               <div>
-                <h1 className="text-white font-semibold text-xl">Liste de courses</h1>
+                <h1 className="text-white font-semibold text-xl">
+                  Liste de courses
+                </h1>
                 <p className="text-white/80 text-sm">
                   {completedCount}/{totalCount} articles
                 </p>
@@ -174,8 +207,8 @@ export default function CoursesPage() {
 
           <Button
             onClick={() => {
-              playClickSound()
-              setShowCategoryManager(!showCategoryManager)
+              playClickSound();
+              setShowCategoryManager(!showCategoryManager);
             }}
             className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
           >
@@ -190,13 +223,15 @@ export default function CoursesPage() {
         {showCategoryManager && (
           <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in-up">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800">Gestion des catégories</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Gestion des catégories
+              </h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => {
-                  playClickSound()
-                  setShowCategoryManager(false)
+                  playClickSound();
+                  setShowCategoryManager(false);
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -235,8 +270,8 @@ export default function CoursesPage() {
                         onChange={(e) => setEditCategoryName(e.target.value)}
                         className="flex-1 h-8 border-pink-200 focus:border-pink-400"
                         onKeyPress={(e) => {
-                          if (e.key === "Enter") saveEditCategory()
-                          if (e.key === "Escape") cancelEditCategory()
+                          if (e.key === "Enter") saveEditCategory();
+                          if (e.key === "Escape") cancelEditCategory();
                         }}
                         autoFocus
                       />
@@ -261,9 +296,16 @@ export default function CoursesPage() {
                     <>
                       <div className="flex items-center space-x-3">
                         <span className="w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full"></span>
-                        <span className="font-medium text-gray-800">{category}</span>
+                        <span className="font-medium text-gray-800">
+                          {category}
+                        </span>
                         <span className="text-sm text-gray-500">
-                          ({items.filter((item) => item.category === category).length} articles)
+                          (
+                          {
+                            items.filter((item) => item.category === category)
+                              .length
+                          }{" "}
+                          articles)
                         </span>
                       </div>
                       <div className="flex items-center space-x-1">
@@ -308,8 +350,8 @@ export default function CoursesPage() {
               <select
                 value={selectedCategory}
                 onChange={(e) => {
-                  playClickSound()
-                  setSelectedCategory(e.target.value)
+                  playClickSound();
+                  setSelectedCategory(e.target.value);
                 }}
                 className="px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white"
               >
@@ -332,7 +374,9 @@ export default function CoursesPage() {
         {/* Shopping List by Category */}
         <div className="space-y-4">
           {displayedCategories.map((category, categoryIndex) => {
-            const categoryItems = items.filter((item) => item.category === category)
+            const categoryItems = items.filter(
+              (item) => item.category === category
+            );
 
             return (
               <div
@@ -344,7 +388,8 @@ export default function CoursesPage() {
                   <span className="w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full mr-2"></span>
                   {category}
                   <span className="ml-2 text-sm text-gray-500">
-                    ({categoryItems.filter((item) => !item.completed).length}/{categoryItems.length})
+                    ({categoryItems.filter((item) => !item.completed).length}/
+                    {categoryItems.length})
                   </span>
                 </h3>
 
@@ -361,7 +406,9 @@ export default function CoursesPage() {
                         onCheckedChange={() => toggleItem(item.id)}
                         className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                       />
-                      <span className={`flex-1 ${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
+                      <span
+                        className={`flex-1 ${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
+                      >
                         {item.name}
                       </span>
                       <Button
@@ -376,7 +423,7 @@ export default function CoursesPage() {
                   ))}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
@@ -384,10 +431,12 @@ export default function CoursesPage() {
           <div className="text-center py-12">
             <ShoppingCart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg">Ta liste est vide ! 🛒</p>
-            <p className="text-gray-500">Ajoute tes premiers articles ci-dessus ✨</p>
+            <p className="text-gray-500">
+              Ajoute tes premiers articles ci-dessus ✨
+            </p>
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }

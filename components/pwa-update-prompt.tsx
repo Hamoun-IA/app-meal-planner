@@ -1,34 +1,34 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { RefreshCw, X } from "lucide-react"
-import { useState, useEffect } from "react"
-import { usePWAUpdate } from "@/hooks/use-pwa-update"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import { RefreshCw, X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { usePWAUpdate } from "@/hooks/use-pwa-update";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 
 export function PWAUpdatePrompt() {
-  const { updateAvailable, updateApp } = usePWAUpdate()
-  const [dismissed, setDismissed] = useState(false)
-  const [swSupported, setSWSupported] = useState(false)
-  const { playClickSound } = useAppSoundsSimple()
+  const { updateAvailable, updateApp } = usePWAUpdate();
+  const [dismissed, setDismissed] = useState(false);
+  const [swSupported, setSWSupported] = useState(false);
+  const { playClickSound } = useAppSoundsSimple();
 
   useEffect(() => {
     // Vérifier le support des Service Workers
-    setSWSupported("serviceWorker" in navigator)
-  }, [])
+    setSWSupported("serviceWorker" in navigator);
+  }, []);
 
   const handleUpdate = () => {
-    playClickSound()
-    updateApp()
-  }
+    playClickSound();
+    updateApp();
+  };
 
   const handleDismiss = () => {
-    playClickSound()
-    setDismissed(true)
-  }
+    playClickSound();
+    setDismissed(true);
+  };
 
   // Ne pas afficher si pas de mise à jour, déjà fermé, ou SW non supporté
-  if (!updateAvailable || dismissed || !swSupported) return null
+  if (!updateAvailable || dismissed || !swSupported) return null;
 
   return (
     <div className="fixed top-4 left-4 right-4 z-50 animate-fade-in-up">
@@ -41,8 +41,12 @@ export function PWAUpdatePrompt() {
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-800 mb-1">Mise à jour disponible</h3>
-            <p className="text-xs text-gray-600 mb-3">Une nouvelle version de Babounette est prête ! ✨</p>
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">
+              Mise à jour disponible
+            </h3>
+            <p className="text-xs text-gray-600 mb-3">
+              Une nouvelle version de Babounette est prête ! ✨
+            </p>
 
             <div className="flex space-x-2">
               <Button
@@ -75,5 +79,5 @@ export function PWAUpdatePrompt() {
         </div>
       </div>
     </div>
-  )
+  );
 }

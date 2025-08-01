@@ -1,42 +1,52 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 
 export interface Recette {
-  id: number
-  title: string
-  description: string
-  category: string
-  difficulty: string
-  prepTime: string
-  cookTime: string
-  servings: number
-  image?: string
-  ingredients: Array<{ name: string; quantity: string }>
-  instructions: Array<{ text: string }>
-  tips: string[]
-  liked: boolean
-  createdAt: string
-  updatedAt: string
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  prepTime: string;
+  cookTime: string;
+  servings: number;
+  image?: string;
+  ingredients: Array<{ name: string; quantity: string }>;
+  instructions: Array<{ text: string }>;
+  tips: string[];
+  liked: boolean;
+  createdAt: string;
+  updatedAt: string;
   nutrition?: {
-    calories: string
-    protein: string
-    carbs: string
-    fat: string
-  }
+    calories: string;
+    protein: string;
+    carbs: string;
+    fat: string;
+  };
 }
 
 interface RecettesContextType {
-  recettes: Recette[]
-  addRecette: (recette: Omit<Recette, "id" | "createdAt" | "updatedAt">) => void
-  updateRecette: (id: number, recette: Partial<Recette>) => void
-  deleteRecette: (id: number) => void
-  getRecetteById: (id: number) => Recette | undefined
-  toggleLike: (id: number) => void
-  isLoading: boolean
+  recettes: Recette[];
+  addRecette: (
+    recette: Omit<Recette, "id" | "createdAt" | "updatedAt">
+  ) => void;
+  updateRecette: (id: number, recette: Partial<Recette>) => void;
+  deleteRecette: (id: number) => void;
+  getRecetteById: (id: number) => Recette | undefined;
+  toggleLike: (id: number) => void;
+  isLoading: boolean;
 }
 
-const RecettesContext = createContext<RecettesContextType | undefined>(undefined)
+const RecettesContext = createContext<RecettesContextType | undefined>(
+  undefined
+);
 
 const defaultRecettes: Recette[] = [
   {
@@ -95,7 +105,8 @@ const defaultRecettes: Recette[] = [
   {
     id: 2,
     title: "Salade de quinoa aux légumes",
-    description: "Une salade fraîche et nutritive, parfaite pour un déjeuner léger et équilibré.",
+    description:
+      "Une salade fraîche et nutritive, parfaite pour un déjeuner léger et équilibré.",
     category: "Plat principal",
     difficulty: "Facile",
     prepTime: "10 min",
@@ -116,14 +127,23 @@ const defaultRecettes: Recette[] = [
       { name: "Menthe fraîche", quantity: "quelques feuilles" },
     ],
     instructions: [
-      { text: "Rincer le quinoa et le cuire dans de l'eau bouillante salée pendant 15 minutes." },
-      { text: "Pendant ce temps, couper les tomates cerises en deux, le concombre en dés et l'avocat en lamelles." },
+      {
+        text: "Rincer le quinoa et le cuire dans de l'eau bouillante salée pendant 15 minutes.",
+      },
+      {
+        text: "Pendant ce temps, couper les tomates cerises en deux, le concombre en dés et l'avocat en lamelles.",
+      },
       { text: "Égoutter le quinoa et le laisser refroidir." },
       { text: "Mélanger le quinoa avec les légumes et la feta émiettée." },
-      { text: "Préparer la vinaigrette avec l'huile d'olive, le jus de citron, sel et poivre." },
+      {
+        text: "Préparer la vinaigrette avec l'huile d'olive, le jus de citron, sel et poivre.",
+      },
       { text: "Assaisonner la salade et garnir de menthe fraîche." },
     ],
-    tips: ["Le quinoa peut être cuit à l'avance", "Ajouter l'avocat au dernier moment pour éviter qu'il noircisse"],
+    tips: [
+      "Le quinoa peut être cuit à l'avance",
+      "Ajouter l'avocat au dernier moment pour éviter qu'il noircisse",
+    ],
     nutrition: {
       calories: "320 kcal",
       protein: "12g",
@@ -131,72 +151,79 @@ const defaultRecettes: Recette[] = [
       fat: "18g",
     },
   },
-]
+];
 
 export function RecettesProvider({ children }: { children: ReactNode }) {
-  const [recettes, setRecettes] = useState<Recette[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [recettes, setRecettes] = useState<Recette[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Charger les recettes depuis localStorage au démarrage
   useEffect(() => {
     try {
-      const savedRecettes = localStorage.getItem("babounette-recettes")
+      const savedRecettes = localStorage.getItem("babounette-recettes");
       if (savedRecettes) {
-        const parsed = JSON.parse(savedRecettes)
-        setRecettes(parsed)
+        const parsed = JSON.parse(savedRecettes);
+        setRecettes(parsed);
       } else {
         // Première utilisation, utiliser les recettes par défaut
-        setRecettes(defaultRecettes)
-        localStorage.setItem("babounette-recettes", JSON.stringify(defaultRecettes))
+        setRecettes(defaultRecettes);
+        localStorage.setItem(
+          "babounette-recettes",
+          JSON.stringify(defaultRecettes)
+        );
       }
     } catch (error) {
-      console.error("Erreur lors du chargement des recettes:", error)
-      setRecettes(defaultRecettes)
+      console.error("Erreur lors du chargement des recettes:", error);
+      setRecettes(defaultRecettes);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+  }, []);
 
   // Sauvegarder les recettes dans localStorage quand elles changent
   useEffect(() => {
     if (!isLoading && recettes.length > 0) {
-      localStorage.setItem("babounette-recettes", JSON.stringify(recettes))
+      localStorage.setItem("babounette-recettes", JSON.stringify(recettes));
     }
-  }, [recettes, isLoading])
+  }, [recettes, isLoading]);
 
-  const addRecette = (newRecette: Omit<Recette, "id" | "createdAt" | "updatedAt">) => {
-    const now = new Date().toISOString()
-    const id = Math.max(...recettes.map((r) => r.id), 0) + 1
+  const addRecette = (
+    newRecette: Omit<Recette, "id" | "createdAt" | "updatedAt">
+  ) => {
+    const now = new Date().toISOString();
+    const id = Math.max(...recettes.map((r) => r.id), 0) + 1;
 
     const recette: Recette = {
       ...newRecette,
       id,
       createdAt: now,
       updatedAt: now,
-    }
+    };
 
-    setRecettes((prev) => [...prev, recette])
-  }
+    setRecettes((prev) => [...prev, recette]);
+  };
 
   const updateRecette = (id: number, updates: Partial<Recette>) => {
     setRecettes((prev) =>
       prev.map((recette) =>
-        recette.id === id ? { ...recette, ...updates, updatedAt: new Date().toISOString() } : recette,
-      ),
-    )
-  }
+        recette.id === id
+          ? { ...recette, ...updates, updatedAt: new Date().toISOString() }
+          : recette
+      )
+    );
+  };
 
   const deleteRecette = (id: number) => {
-    setRecettes((prev) => prev.filter((recette) => recette.id !== id))
-  }
+    setRecettes((prev) => prev.filter((recette) => recette.id !== id));
+  };
 
   const getRecetteById = (id: number) => {
-    return recettes.find((recette) => recette.id === id)
-  }
+    return recettes.find((recette) => recette.id === id);
+  };
 
   const toggleLike = (id: number) => {
-    updateRecette(id, { liked: !getRecetteById(id)?.liked })
-  }
+    updateRecette(id, { liked: !getRecetteById(id)?.liked });
+  };
 
   return (
     <RecettesContext.Provider
@@ -212,13 +239,13 @@ export function RecettesProvider({ children }: { children: ReactNode }) {
     >
       {children}
     </RecettesContext.Provider>
-  )
+  );
 }
 
 export function useRecettes() {
-  const context = useContext(RecettesContext)
+  const context = useContext(RecettesContext);
   if (context === undefined) {
-    throw new Error("useRecettes must be used within a RecettesProvider")
+    throw new Error("useRecettes must be used within a RecettesProvider");
   }
-  return context
+  return context;
 }

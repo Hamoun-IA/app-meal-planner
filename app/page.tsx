@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
-import { useEffect } from "react"
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
+import { useEffect } from "react";
 
 export default function HomePage() {
-  const { playClickSound } = useAppSoundsSimple()
+  const { playClickSound } = useAppSoundsSimple();
 
   // Enregistrer le Service Worker avec gestion d'erreur améliorée
   useEffect(() => {
@@ -14,54 +14,69 @@ export default function HomePage() {
       // Vérifier d'abord si le fichier SW existe
       fetch("/sw.js", { method: "HEAD" })
         .then((response) => {
-          if (response.ok && response.headers.get("content-type")?.includes("javascript")) {
+          if (
+            response.ok &&
+            response.headers.get("content-type")?.includes("javascript")
+          ) {
             // Le fichier existe et a le bon MIME type
             return navigator.serviceWorker.register("/sw.js", {
               scope: "/",
               updateViaCache: "none", // Toujours vérifier les mises à jour
-            })
+            });
           } else {
-            console.log("Service Worker non disponible dans cet environnement")
-            return null
+            console.log("Service Worker non disponible dans cet environnement");
+            return null;
           }
         })
         .then((registration) => {
           if (registration) {
-            console.log("Service Worker enregistré avec succès:", registration.scope)
+            console.log(
+              "Service Worker enregistré avec succès:",
+              registration.scope
+            );
 
             // Vérifier les mises à jour
             registration.addEventListener("updatefound", () => {
-              console.log("Nouvelle version du Service Worker trouvée")
-              const newWorker = registration.installing
+              console.log("Nouvelle version du Service Worker trouvée");
+              const newWorker = registration.installing;
               if (newWorker) {
                 newWorker.addEventListener("statechange", () => {
-                  if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-                    console.log("Nouvelle version prête à être activée")
+                  if (
+                    newWorker.state === "installed" &&
+                    navigator.serviceWorker.controller
+                  ) {
+                    console.log("Nouvelle version prête à être activée");
                     // Optionnel: notifier l'utilisateur qu'une mise à jour est disponible
                   }
-                })
+                });
               }
-            })
+            });
 
             // Écouter les changements d'état
             registration.addEventListener("statechange", () => {
-              console.log("État du Service Worker:", registration.active?.state)
-            })
+              console.log(
+                "État du Service Worker:",
+                registration.active?.state
+              );
+            });
           }
         })
         .catch((error) => {
-          console.log("Service Worker non supporté ou non disponible:", error.message)
+          console.log(
+            "Service Worker non supporté ou non disponible:",
+            error.message
+          );
           // Ne pas afficher d'erreur à l'utilisateur, juste continuer sans SW
-        })
+        });
     } else {
-      console.log("Service Workers non supportés dans ce navigateur")
+      console.log("Service Workers non supportés dans ce navigateur");
     }
-  }, [])
+  }, []);
 
   const handleButtonClick = () => {
-    console.log("Button clicked!")
-    playClickSound()
-  }
+    console.log("Button clicked!");
+    playClickSound();
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-100 via-rose-50 to-pink-200 flex flex-col items-center justify-center p-4 relative overflow-hidden animate-page-enter">
@@ -148,5 +163,5 @@ export default function HomePage() {
       {/* Bottom decorative wave */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-pink-200/50 to-transparent animate-wave"></div>
     </div>
-  )
+  );
 }

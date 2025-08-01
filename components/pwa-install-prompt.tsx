@@ -1,112 +1,117 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Download, X, Smartphone, Monitor } from "lucide-react"
-import { useState, useEffect } from "react"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import { Download, X, Smartphone, Monitor } from "lucide-react";
+import { useState, useEffect } from "react";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 
 interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[]
+  readonly platforms: string[];
   readonly userChoice: Promise<{
-    outcome: "accepted" | "dismissed"
-    platform: string
-  }>
-  prompt(): Promise<void>
+    outcome: "accepted" | "dismissed";
+    platform: string;
+  }>;
+  prompt(): Promise<void>;
 }
 
 export function PWAInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
-  const [showPrompt, setShowPrompt] = useState(false)
-  const [isInstalled, setIsInstalled] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(false)
-  const [swSupported, setSWSupported] = useState(false)
-  const { playClickSound } = useAppSoundsSimple()
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
+  const [showPrompt, setShowPrompt] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [swSupported, setSWSupported] = useState(false);
+  const { playClickSound } = useAppSoundsSimple();
 
   useEffect(() => {
     // Vérifier le support des Service Workers
-    const swSupport = "serviceWorker" in navigator
-    setSWSupported(swSupport)
+    const swSupport = "serviceWorker" in navigator;
+    setSWSupported(swSupport);
 
     // Détecter iOS
-    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    setIsIOS(iOS)
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    setIsIOS(iOS);
 
     // Détecter si déjà installé
     const standalone =
-      window.matchMedia("(display-mode: standalone)").matches || (window.navigator as any).standalone === true
-    setIsStandalone(standalone)
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true;
+    setIsStandalone(standalone);
 
     // Vérifier si déjà installé via localStorage
-    const hasBeenInstalled = localStorage.getItem("pwa-installed") === "true"
-    const hasBeenDismissed = localStorage.getItem("pwa-dismissed") === "true"
+    const hasBeenInstalled = localStorage.getItem("pwa-installed") === "true";
+    const hasBeenDismissed = localStorage.getItem("pwa-dismissed") === "true";
 
-    setIsInstalled(hasBeenInstalled || standalone)
+    setIsInstalled(hasBeenInstalled || standalone);
 
     // Écouter l'événement beforeinstallprompt seulement si SW supporté
     if (swSupport) {
       const handleBeforeInstallPrompt = (e: Event) => {
-        e.preventDefault()
-        setDeferredPrompt(e as BeforeInstallPromptEvent)
+        e.preventDefault();
+        setDeferredPrompt(e as BeforeInstallPromptEvent);
 
         // Afficher le prompt seulement si pas déjà installé et pas déjà refusé
         if (!hasBeenInstalled && !hasBeenDismissed && !standalone) {
           // Attendre un peu avant d'afficher le prompt
-          setTimeout(() => setShowPrompt(true), 3000)
+          setTimeout(() => setShowPrompt(true), 3000);
         }
-      }
+      };
 
       // Écouter l'installation
       const handleAppInstalled = () => {
-        setIsInstalled(true)
-        setShowPrompt(false)
-        localStorage.setItem("pwa-installed", "true")
-        console.log("PWA installée avec succès!")
-      }
+        setIsInstalled(true);
+        setShowPrompt(false);
+        localStorage.setItem("pwa-installed", "true");
+        console.log("PWA installée avec succès!");
+      };
 
-      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-      window.addEventListener("appinstalled", handleAppInstalled)
+      window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.addEventListener("appinstalled", handleAppInstalled);
 
       return () => {
-        window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt)
-        window.removeEventListener("appinstalled", handleAppInstalled)
-      }
+        window.removeEventListener(
+          "beforeinstallprompt",
+          handleBeforeInstallPrompt
+        );
+        window.removeEventListener("appinstalled", handleAppInstalled);
+      };
     }
-  }, [])
+  }, []);
 
   const handleInstallClick = async () => {
-    playClickSound()
+    playClickSound();
 
     if (deferredPrompt) {
       try {
-        await deferredPrompt.prompt()
-        const { outcome } = await deferredPrompt.userChoice
+        await deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
 
         if (outcome === "accepted") {
-          console.log("Utilisateur a accepté l'installation")
-          localStorage.setItem("pwa-installed", "true")
+          console.log("Utilisateur a accepté l'installation");
+          localStorage.setItem("pwa-installed", "true");
         } else {
-          console.log("Utilisateur a refusé l'installation")
-          localStorage.setItem("pwa-dismissed", "true")
+          console.log("Utilisateur a refusé l'installation");
+          localStorage.setItem("pwa-dismissed", "true");
         }
 
-        setDeferredPrompt(null)
-        setShowPrompt(false)
+        setDeferredPrompt(null);
+        setShowPrompt(false);
       } catch (error) {
-        console.error("Erreur lors de l'installation:", error)
+        console.error("Erreur lors de l'installation:", error);
       }
     }
-  }
+  };
 
   const handleDismiss = () => {
-    playClickSound()
-    setShowPrompt(false)
-    localStorage.setItem("pwa-dismissed", "true")
-  }
+    playClickSound();
+    setShowPrompt(false);
+    localStorage.setItem("pwa-dismissed", "true");
+  };
 
   // Ne pas afficher si déjà installé, en mode standalone, ou si SW non supporté
   if (isInstalled || isStandalone || !showPrompt || !swSupported) {
-    return null
+    return null;
   }
 
   return (
@@ -115,12 +120,18 @@ export function PWAInstallPrompt() {
         <div className="flex items-start space-x-3">
           <div className="flex-shrink-0">
             <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full flex items-center justify-center">
-              {isIOS ? <Smartphone className="w-6 h-6 text-white" /> : <Monitor className="w-6 h-6 text-white" />}
+              {isIOS ? (
+                <Smartphone className="w-6 h-6 text-white" />
+              ) : (
+                <Monitor className="w-6 h-6 text-white" />
+              )}
             </div>
           </div>
 
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-800 mb-1">Installer Babounette</h3>
+            <h3 className="text-sm font-semibold text-gray-800 mb-1">
+              Installer Babounette
+            </h3>
             <p className="text-xs text-gray-600 mb-3">
               {isIOS
                 ? "Ajoute Babounette à ton écran d'accueil pour un accès rapide !"
@@ -130,7 +141,8 @@ export function PWAInstallPrompt() {
             {isIOS ? (
               <div className="text-xs text-gray-500 mb-3">
                 <p>
-                  1. Appuie sur <span className="font-medium">⎙</span> (Partager)
+                  1. Appuie sur <span className="font-medium">⎙</span>{" "}
+                  (Partager)
                 </p>
                 <p>2. Sélectionne "Sur l'écran d'accueil"</p>
               </div>
@@ -167,5 +179,5 @@ export function PWAInstallPrompt() {
         </div>
       </div>
     </div>
-  )
+  );
 }

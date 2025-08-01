@@ -1,30 +1,40 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Switch } from "@/components/ui/switch"
-import Link from "next/link"
-import { ArrowLeft, Bell, Moon, Palette, Settings, User, Volume2, CheckCircle, Music } from "lucide-react"
-import { useSettings } from "@/contexts/settings-context"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Bell,
+  Moon,
+  Palette,
+  Settings,
+  User,
+  Volume2,
+  CheckCircle,
+  Music,
+} from "lucide-react";
+import { useSettings } from "@/contexts/settings-context";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 // import { useAudioStatus } from "@/hooks/use-audio-status" // Removed import
 
 export default function OptionsPage() {
-  const { settings, updateSetting } = useSettings()
-  const { playBackSound, audioStatus } = useAppSoundsSimple() // Updated line
+  const { settings, updateSetting } = useSettings();
+  const { playBackSound, audioStatus } = useAppSoundsSimple(); // Updated line
   // const { audioStatus } = useAudioStatus() // Removed line
 
   const handleBackClick = () => {
-    console.log("Back button clicked!")
-    playBackSound()
-  }
+    console.log("Back button clicked!");
+    playBackSound();
+  };
 
   const handleSwitchChange = (key: string, value: boolean) => {
     // Jouer un son de confirmation si les sons sont activés
     if (key !== "sounds" && settings.sounds) {
       // playClickSound() // Removed playClickSound
     }
-    updateSetting(key, value)
-  }
+    updateSetting(key, value);
+  };
 
   const settingsGroups = [
     {
@@ -69,7 +79,7 @@ export default function OptionsPage() {
         },
       ],
     },
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -106,7 +116,9 @@ export default function OptionsPage() {
               <span className="text-2xl">💖</span>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Super Babounette</h2>
+              <h2 className="text-xl font-semibold text-gray-800">
+                Super Babounette
+              </h2>
               <p className="text-gray-600">Ton assistante préférée ✨</p>
             </div>
           </div>
@@ -115,7 +127,7 @@ export default function OptionsPage() {
         {/* Settings Groups */}
         <div className="space-y-6">
           {settingsGroups.map((group, groupIndex) => {
-            const GroupIcon = group.icon
+            const GroupIcon = group.icon;
 
             return (
               <div
@@ -127,12 +139,14 @@ export default function OptionsPage() {
                   <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-400 rounded-lg flex items-center justify-center">
                     <GroupIcon className="w-4 h-4 text-white" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-800">{group.title}</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    {group.title}
+                  </h3>
                 </div>
 
                 <div className="space-y-4">
                   {group.items.map((item) => {
-                    const ItemIcon = item.icon
+                    const ItemIcon = item.icon;
 
                     return (
                       <div
@@ -142,21 +156,27 @@ export default function OptionsPage() {
                         <div className="flex items-center space-x-3">
                           <ItemIcon className="w-5 h-5 text-gray-600" />
                           <div>
-                            <p className="font-medium text-gray-800">{item.label}</p>
-                            <p className="text-sm text-gray-600">{item.description}</p>
+                            <p className="font-medium text-gray-800">
+                              {item.label}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {item.description}
+                            </p>
                           </div>
                         </div>
                         <Switch
                           checked={settings[item.key]}
-                          onCheckedChange={(value) => handleSwitchChange(item.key, value)}
+                          onCheckedChange={(value) =>
+                            handleSwitchChange(item.key, value)
+                          }
                           className="data-[state=checked]:bg-pink-500"
                         />
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </div>
-            )
+            );
           })}
         </div>
 
@@ -187,7 +207,10 @@ export default function OptionsPage() {
                   ) : (
                     <Music className="w-3 h-3 text-blue-500" />
                   )}
-                  <span>Retour: {audioStatus.backSoundLoaded ? "Fairy Click" : "Web Audio"}</span>
+                  <span>
+                    Retour:{" "}
+                    {audioStatus.backSoundLoaded ? "Fairy Click" : "Web Audio"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -195,13 +218,22 @@ export default function OptionsPage() {
         )}
 
         {/* Action Buttons */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mt-6 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+        <div
+          className="bg-white rounded-2xl shadow-lg p-6 mt-6 animate-fade-in-up"
+          style={{ animationDelay: "0.4s" }}
+        >
           <div className="space-y-3">
-            <Button variant="outline" className="w-full justify-start border-pink-200 hover:bg-pink-50 bg-transparent">
+            <Button
+              variant="outline"
+              className="w-full justify-start border-pink-200 hover:bg-pink-50 bg-transparent"
+            >
               <User className="w-4 h-4 mr-3" />
               Modifier le profil
             </Button>
-            <Button variant="outline" className="w-full justify-start border-pink-200 hover:bg-pink-50 bg-transparent">
+            <Button
+              variant="outline"
+              className="w-full justify-start border-pink-200 hover:bg-pink-50 bg-transparent"
+            >
               <Settings className="w-4 h-4 mr-3" />
               Paramètres avancés
             </Button>
@@ -209,15 +241,20 @@ export default function OptionsPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 animate-fade-in-up" style={{ animationDelay: "0.7s" }}>
+        <div
+          className="text-center mt-8 animate-fade-in-up"
+          style={{ animationDelay: "0.7s" }}
+        >
           <div className="flex justify-center space-x-2 text-pink-400 mb-2">
             <span className="text-lg animate-bounce-gentle">💖</span>
             <span className="text-sm animate-bounce-gentle delay-100">✨</span>
             <span className="text-lg animate-bounce-gentle delay-200">💖</span>
           </div>
-          <p className="text-pink-500/60 text-xs">Version 1.0.0 • Fait avec amour 💕</p>
+          <p className="text-pink-500/60 text-xs">
+            Version 1.0.0 • Fait avec amour 💕
+          </p>
         </div>
       </div>
     </div>
-  )
+  );
 }

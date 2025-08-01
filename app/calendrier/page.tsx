@@ -1,50 +1,74 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, Plus } from "lucide-react"
-import { useState } from "react"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+} from "lucide-react";
+import { useState } from "react";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 
 export default function CalendrierPage() {
-  const [currentDate, setCurrentDate] = useState(new Date())
-  const [selectedDate, setSelectedDate] = useState(new Date())
-  const { playBackSound } = useAppSoundsSimple()
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const { playBackSound } = useAppSoundsSimple();
 
   const handleBackClick = () => {
-    console.log("Back button clicked!")
-    playBackSound()
-  }
+    console.log("Back button clicked!");
+    playBackSound();
+  };
 
   const events = [
-    { id: 1, date: "2024-01-15", title: "Rendez-vous médecin", time: "14:30", color: "pink" },
-    { id: 2, date: "2024-01-18", title: "Dîner avec les amies", time: "19:00", color: "rose" },
-    { id: 3, date: "2024-01-22", title: "Cours de yoga", time: "10:00", color: "pink" },
-  ]
+    {
+      id: 1,
+      date: "2024-01-15",
+      title: "Rendez-vous médecin",
+      time: "14:30",
+      color: "pink",
+    },
+    {
+      id: 2,
+      date: "2024-01-18",
+      title: "Dîner avec les amies",
+      time: "19:00",
+      color: "rose",
+    },
+    {
+      id: 3,
+      date: "2024-01-22",
+      title: "Cours de yoga",
+      time: "10:00",
+      color: "pink",
+    },
+  ];
 
   const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
-    const daysInMonth = lastDay.getDate()
-    const startingDayOfWeek = firstDay.getDay()
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
 
-    const days = []
+    const days = [];
 
     // Jours du mois précédent
     for (let i = startingDayOfWeek - 1; i >= 0; i--) {
-      const prevDate = new Date(year, month, -i)
-      days.push({ date: prevDate, isCurrentMonth: false })
+      const prevDate = new Date(year, month, -i);
+      days.push({ date: prevDate, isCurrentMonth: false });
     }
 
     // Jours du mois actuel
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push({ date: new Date(year, month, day), isCurrentMonth: true })
+      days.push({ date: new Date(year, month, day), isCurrentMonth: true });
     }
 
-    return days
-  }
+    return days;
+  };
 
   const monthNames = [
     "Janvier",
@@ -59,19 +83,23 @@ export default function CalendrierPage() {
     "Octobre",
     "Novembre",
     "Décembre",
-  ]
+  ];
 
-  const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]
+  const dayNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
 
-  const days = getDaysInMonth(currentDate)
+  const days = getDaysInMonth(currentDate);
 
   const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
-  }
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
+    );
+  };
 
   const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
-  }
+    setCurrentDate(
+      new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -96,10 +124,15 @@ export default function CalendrierPage() {
             </Button>
             <div className="flex items-center space-x-3">
               <Calendar className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">Mon Calendrier</h1>
+              <h1 className="text-white font-semibold text-xl">
+                Mon Calendrier
+              </h1>
             </div>
           </div>
-          <Button size="sm" className="bg-white/20 hover:bg-white/30 text-white">
+          <Button
+            size="sm"
+            className="bg-white/20 hover:bg-white/30 text-white"
+          >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter
           </Button>
@@ -110,13 +143,21 @@ export default function CalendrierPage() {
         {/* Calendar Navigation */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in-up">
           <div className="flex items-center justify-between mb-6">
-            <Button variant="ghost" onClick={previousMonth} className="hover:bg-pink-100">
+            <Button
+              variant="ghost"
+              onClick={previousMonth}
+              className="hover:bg-pink-100"
+            >
               <ChevronLeft className="w-5 h-5" />
             </Button>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
-            <Button variant="ghost" onClick={nextMonth} className="hover:bg-pink-100">
+            <Button
+              variant="ghost"
+              onClick={nextMonth}
+              className="hover:bg-pink-100"
+            >
               <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
@@ -124,7 +165,10 @@ export default function CalendrierPage() {
           {/* Days of week */}
           <div className="grid grid-cols-7 gap-2 mb-4">
             {dayNames.map((day) => (
-              <div key={day} className="text-center text-sm font-semibold text-gray-600 py-2">
+              <div
+                key={day}
+                className="text-center text-sm font-semibold text-gray-600 py-2"
+              >
                 {day}
               </div>
             ))}
@@ -133,8 +177,10 @@ export default function CalendrierPage() {
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-2">
             {days.map((day, index) => {
-              const isToday = day.date.toDateString() === new Date().toDateString()
-              const isSelected = day.date.toDateString() === selectedDate.toDateString()
+              const isToday =
+                day.date.toDateString() === new Date().toDateString();
+              const isSelected =
+                day.date.toDateString() === selectedDate.toDateString();
 
               return (
                 <button
@@ -150,22 +196,33 @@ export default function CalendrierPage() {
                 >
                   {day.date.getDate()}
                 </button>
-              )
+              );
             })}
           </div>
         </div>
 
         {/* Events for selected date */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+        <div
+          className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <h3 className="text-lg font-semibold text-gray-800 mb-4">
             Événements du {selectedDate.toLocaleDateString("fr-FR")}
           </h3>
           <div className="space-y-3">
-            {events.filter((event) => event.date === selectedDate.toISOString().split("T")[0]).length > 0 ? (
+            {events.filter(
+              (event) => event.date === selectedDate.toISOString().split("T")[0]
+            ).length > 0 ? (
               events
-                .filter((event) => event.date === selectedDate.toISOString().split("T")[0])
+                .filter(
+                  (event) =>
+                    event.date === selectedDate.toISOString().split("T")[0]
+                )
                 .map((event) => (
-                  <div key={event.id} className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg">
+                  <div
+                    key={event.id}
+                    className="flex items-center space-x-3 p-3 bg-pink-50 rounded-lg"
+                  >
                     <div
                       className={`w-3 h-3 rounded-full bg-gradient-to-r from-${event.color}-400 to-${event.color}-500`}
                     ></div>
@@ -185,5 +242,5 @@ export default function CalendrierPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

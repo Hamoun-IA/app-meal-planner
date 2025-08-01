@@ -1,20 +1,30 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import Link from "next/link"
-import { ArrowLeft, ChefHat, Clock, Users, Camera, Plus, Minus, X, Save } from "lucide-react"
-import { useState } from "react"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
-import { useRecettes } from "@/contexts/recettes-context"
-import { useRouter } from "next/navigation"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  ChefHat,
+  Clock,
+  Users,
+  Camera,
+  Plus,
+  Minus,
+  X,
+  Save,
+} from "lucide-react";
+import { useState } from "react";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
+import { useRecettes } from "@/contexts/recettes-context";
+import { useRouter } from "next/navigation";
 
 export default function AjouterRecettePage() {
-  const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { addRecette } = useRecettes()
-  const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(1)
+  const { playBackSound, playClickSound } = useAppSoundsSimple();
+  const { addRecette } = useRecettes();
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(1);
   const [recette, setRecette] = useState({
     title: "",
     description: "",
@@ -28,148 +38,159 @@ export default function AjouterRecettePage() {
     instructions: [{ text: "" }],
     tips: [""],
     liked: false,
-  })
+  });
 
   const handleBackClick = () => {
-    console.log("Back button clicked!")
-    playBackSound()
-  }
+    console.log("Back button clicked!");
+    playBackSound();
+  };
 
   const handleInputChange = (field: string, value: string | number) => {
-    playClickSound()
-    setRecette((prev) => ({ ...prev, [field]: value }))
-  }
+    playClickSound();
+    setRecette((prev) => ({ ...prev, [field]: value }));
+  };
 
   const addIngredient = () => {
-    playClickSound()
+    playClickSound();
     setRecette((prev) => ({
       ...prev,
       ingredients: [...prev.ingredients, { name: "", quantity: "" }],
-    }))
-  }
+    }));
+  };
 
   const removeIngredient = (index: number) => {
-    playClickSound()
+    playClickSound();
     setRecette((prev) => ({
       ...prev,
       ingredients: prev.ingredients.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const updateIngredient = (index: number, field: string, value: string) => {
     setRecette((prev) => ({
       ...prev,
       ingredients: prev.ingredients.map((ingredient, i) =>
-        i === index ? { ...ingredient, [field]: value } : ingredient,
+        i === index ? { ...ingredient, [field]: value } : ingredient
       ),
-    }))
-  }
+    }));
+  };
 
   const addInstruction = () => {
-    playClickSound()
+    playClickSound();
     setRecette((prev) => ({
       ...prev,
       instructions: [...prev.instructions, { text: "" }],
-    }))
-  }
+    }));
+  };
 
   const removeInstruction = (index: number) => {
-    playClickSound()
+    playClickSound();
     setRecette((prev) => ({
       ...prev,
       instructions: prev.instructions.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const updateInstruction = (index: number, value: string) => {
     setRecette((prev) => ({
       ...prev,
-      instructions: prev.instructions.map((instruction, i) => (i === index ? { text: value } : instruction)),
-    }))
-  }
+      instructions: prev.instructions.map((instruction, i) =>
+        i === index ? { text: value } : instruction
+      ),
+    }));
+  };
 
   const addTip = () => {
-    playClickSound()
+    playClickSound();
     setRecette((prev) => ({
       ...prev,
       tips: [...prev.tips, ""],
-    }))
-  }
+    }));
+  };
 
   const removeTip = (index: number) => {
-    playClickSound()
+    playClickSound();
     setRecette((prev) => ({
       ...prev,
       tips: prev.tips.filter((_, i) => i !== index),
-    }))
-  }
+    }));
+  };
 
   const updateTip = (index: number, value: string) => {
     setRecette((prev) => ({
       ...prev,
       tips: prev.tips.map((tip, i) => (i === index ? value : tip)),
-    }))
-  }
+    }));
+  };
 
   const adjustServings = (change: number) => {
-    playClickSound()
-    const newServings = Math.max(1, recette.servings + change)
-    setRecette((prev) => ({ ...prev, servings: newServings }))
-  }
+    playClickSound();
+    const newServings = Math.max(1, recette.servings + change);
+    setRecette((prev) => ({ ...prev, servings: newServings }));
+  };
 
   const nextStep = () => {
-    playClickSound()
-    setCurrentStep((prev) => Math.min(prev + 1, 4))
-  }
+    playClickSound();
+    setCurrentStep((prev) => Math.min(prev + 1, 4));
+  };
 
   const prevStep = () => {
-    playClickSound()
-    setCurrentStep((prev) => Math.max(prev - 1, 1))
-  }
+    playClickSound();
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+  };
 
   const handleSave = () => {
-    playClickSound()
+    playClickSound();
 
     // Validation basique
     if (!recette.title.trim()) {
-      alert("Le titre est obligatoire !")
-      return
+      alert("Le titre est obligatoire !");
+      return;
     }
 
     if (!recette.category) {
-      alert("La catégorie est obligatoire !")
-      return
+      alert("La catégorie est obligatoire !");
+      return;
     }
 
     if (!recette.difficulty) {
-      alert("La difficulté est obligatoire !")
-      return
+      alert("La difficulté est obligatoire !");
+      return;
     }
 
     // Nettoyer les données
     const cleanedRecette = {
       ...recette,
-      ingredients: recette.ingredients.filter((ing) => ing.name.trim() && ing.quantity.trim()),
+      ingredients: recette.ingredients.filter(
+        (ing) => ing.name.trim() && ing.quantity.trim()
+      ),
       instructions: recette.instructions.filter((inst) => inst.text.trim()),
       tips: recette.tips.filter((tip) => tip.trim()),
-    }
+    };
 
     // Ajouter la recette
-    addRecette(cleanedRecette)
+    addRecette(cleanedRecette);
 
     // Rediriger vers la liste des recettes
-    router.push("/recettes")
-  }
+    router.push("/recettes");
+  };
 
-  const categories = ["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"]
-  const difficulties = ["Très facile", "Facile", "Moyen", "Difficile"]
+  const categories = [
+    "Dessert",
+    "Plat principal",
+    "Petit-déjeuner",
+    "Entrée",
+    "Apéritif",
+    "Boisson",
+  ];
+  const difficulties = ["Très facile", "Facile", "Moyen", "Difficile"];
 
   const steps = [
     { number: 1, title: "Informations", icon: "📝" },
     { number: 2, title: "Ingrédients", icon: "🥄" },
     { number: 3, title: "Instructions", icon: "👩‍🍳" },
     { number: 4, title: "Finalisation", icon: "✨" },
-  ]
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -194,7 +215,9 @@ export default function AjouterRecettePage() {
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">Ajouter une recette</h1>
+              <h1 className="text-white font-semibold text-xl">
+                Ajouter une recette
+              </h1>
             </div>
           </div>
 
@@ -243,20 +266,32 @@ export default function AjouterRecettePage() {
         </div>
 
         {/* Step Content */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div
+          className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up"
+          style={{ animationDelay: "0.1s" }}
+        >
           {/* Step 1: Informations générales */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">Informations générales</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-6">
+                Informations générales
+              </h2>
 
               {/* Photo de la recette */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Photo de la recette</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Photo de la recette
+                </label>
                 <div className="border-2 border-dashed border-pink-200 rounded-lg p-8 text-center hover:border-pink-300 transition-colors">
                   <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Clique pour ajouter une photo</p>
+                  <p className="text-gray-600 mb-2">
+                    Clique pour ajouter une photo
+                  </p>
                   <p className="text-sm text-gray-500">JPG, PNG jusqu'à 5MB</p>
-                  <Button variant="outline" className="mt-4 border-pink-200 hover:bg-pink-50 bg-transparent">
+                  <Button
+                    variant="outline"
+                    className="mt-4 border-pink-200 hover:bg-pink-50 bg-transparent"
+                  >
                     Choisir une photo
                   </Button>
                 </div>
@@ -264,7 +299,9 @@ export default function AjouterRecettePage() {
 
               {/* Titre */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Titre de la recette *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Titre de la recette *
+                </label>
                 <Input
                   value={recette.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
@@ -275,10 +312,14 @@ export default function AjouterRecettePage() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
                 <Textarea
                   value={recette.description}
-                  onChange={(e) => handleInputChange("description", e.target.value)}
+                  onChange={(e) =>
+                    handleInputChange("description", e.target.value)
+                  }
                   placeholder="Décris ta recette en quelques mots..."
                   className="border-pink-200 focus:border-pink-400 min-h-[100px]"
                 />
@@ -287,10 +328,14 @@ export default function AjouterRecettePage() {
               {/* Catégorie et Difficulté */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Catégorie *
+                  </label>
                   <select
                     value={recette.category}
-                    onChange={(e) => handleInputChange("category", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("category", e.target.value)
+                    }
                     className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
                   >
                     <option value="">Choisir une catégorie</option>
@@ -303,10 +348,14 @@ export default function AjouterRecettePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Difficulté *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Difficulté *
+                  </label>
                   <select
                     value={recette.difficulty}
-                    onChange={(e) => handleInputChange("difficulty", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("difficulty", e.target.value)
+                    }
                     className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
                   >
                     <option value="">Choisir la difficulté</option>
@@ -322,12 +371,16 @@ export default function AjouterRecettePage() {
               {/* Temps et Portions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Temps de préparation</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Temps de préparation
+                  </label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
                       value={recette.prepTime}
-                      onChange={(e) => handleInputChange("prepTime", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("prepTime", e.target.value)
+                      }
                       placeholder="15 min"
                       className="pl-10 border-pink-200 focus:border-pink-400"
                     />
@@ -335,12 +388,16 @@ export default function AjouterRecettePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Temps de cuisson</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Temps de cuisson
+                  </label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
                       value={recette.cookTime}
-                      onChange={(e) => handleInputChange("cookTime", e.target.value)}
+                      onChange={(e) =>
+                        handleInputChange("cookTime", e.target.value)
+                      }
                       placeholder="10 min"
                       className="pl-10 border-pink-200 focus:border-pink-400"
                     />
@@ -348,7 +405,9 @@ export default function AjouterRecettePage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Portions</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Portions
+                  </label>
                   <div className="flex items-center space-x-3">
                     <Button
                       variant="outline"
@@ -360,7 +419,9 @@ export default function AjouterRecettePage() {
                     </Button>
                     <div className="flex items-center space-x-2 px-4 py-2 bg-pink-50 rounded-lg">
                       <Users className="w-4 h-4 text-pink-600" />
-                      <span className="font-medium text-gray-800">{recette.servings}</span>
+                      <span className="font-medium text-gray-800">
+                        {recette.servings}
+                      </span>
                     </div>
                     <Button
                       variant="outline"
@@ -380,8 +441,13 @@ export default function AjouterRecettePage() {
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-800">Ingrédients</h2>
-                <Button onClick={addIngredient} className="bg-gradient-to-r from-pink-500 to-rose-500">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Ingrédients
+                </h2>
+                <Button
+                  onClick={addIngredient}
+                  className="bg-gradient-to-r from-pink-500 to-rose-500"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Ajouter
                 </Button>
@@ -389,17 +455,24 @@ export default function AjouterRecettePage() {
 
               <div className="space-y-4">
                 {recette.ingredients.map((ingredient, index) => (
-                  <div key={index} className="flex items-center space-x-3 p-4 bg-pink-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center space-x-3 p-4 bg-pink-50 rounded-lg"
+                  >
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
                       <Input
                         value={ingredient.name}
-                        onChange={(e) => updateIngredient(index, "name", e.target.value)}
+                        onChange={(e) =>
+                          updateIngredient(index, "name", e.target.value)
+                        }
                         placeholder="Nom de l'ingrédient"
                         className="border-pink-200 focus:border-pink-400"
                       />
                       <Input
                         value={ingredient.quantity}
-                        onChange={(e) => updateIngredient(index, "quantity", e.target.value)}
+                        onChange={(e) =>
+                          updateIngredient(index, "quantity", e.target.value)
+                        }
                         placeholder="Quantité (ex: 200g)"
                         className="border-pink-200 focus:border-pink-400"
                       />
@@ -424,8 +497,13 @@ export default function AjouterRecettePage() {
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-800">Instructions</h2>
-                <Button onClick={addInstruction} className="bg-gradient-to-r from-pink-500 to-rose-500">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Instructions
+                </h2>
+                <Button
+                  onClick={addInstruction}
+                  className="bg-gradient-to-r from-pink-500 to-rose-500"
+                >
                   <Plus className="w-4 h-4 mr-2" />
                   Ajouter
                 </Button>
@@ -433,7 +511,10 @@ export default function AjouterRecettePage() {
 
               <div className="space-y-4">
                 {recette.instructions.map((instruction, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-4 bg-pink-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-start space-x-3 p-4 bg-pink-50 rounded-lg"
+                  >
                     <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full flex items-center justify-center font-medium text-sm">
                       {index + 1}
                     </div>
@@ -462,11 +543,15 @@ export default function AjouterRecettePage() {
           {/* Step 4: Finalisation */}
           {currentStep === 4 && (
             <div className="space-y-6">
-              <h2 className="text-2xl font-bold text-gray-800">Conseils et finalisation</h2>
+              <h2 className="text-2xl font-bold text-gray-800">
+                Conseils et finalisation
+              </h2>
 
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Conseils de chef (optionnel)</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Conseils de chef (optionnel)
+                  </h3>
                   <Button
                     onClick={addTip}
                     variant="outline"
@@ -483,7 +568,9 @@ export default function AjouterRecettePage() {
                       key={index}
                       className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200"
                     >
-                      <span className="text-yellow-600 text-lg flex-shrink-0">💡</span>
+                      <span className="text-yellow-600 text-lg flex-shrink-0">
+                        💡
+                      </span>
                       <Input
                         value={tip}
                         onChange={(e) => updateTip(index, e.target.value)}
@@ -507,19 +594,27 @@ export default function AjouterRecettePage() {
 
               {/* Résumé de la recette */}
               <div className="bg-gradient-to-r from-pink-100 to-rose-100 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Résumé de ta recette ✨</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Résumé de ta recette ✨
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-gray-600">Titre:</p>
-                    <p className="font-medium">{recette.title || "Non défini"}</p>
+                    <p className="font-medium">
+                      {recette.title || "Non défini"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Catégorie:</p>
-                    <p className="font-medium">{recette.category || "Non définie"}</p>
+                    <p className="font-medium">
+                      {recette.category || "Non définie"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Difficulté:</p>
-                    <p className="font-medium">{recette.difficulty || "Non définie"}</p>
+                    <p className="font-medium">
+                      {recette.difficulty || "Non définie"}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Portions:</p>
@@ -527,11 +622,16 @@ export default function AjouterRecettePage() {
                   </div>
                   <div>
                     <p className="text-gray-600">Ingrédients:</p>
-                    <p className="font-medium">{recette.ingredients.filter((i) => i.name).length} ingrédients</p>
+                    <p className="font-medium">
+                      {recette.ingredients.filter((i) => i.name).length}{" "}
+                      ingrédients
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-600">Étapes:</p>
-                    <p className="font-medium">{recette.instructions.filter((i) => i.text).length} étapes</p>
+                    <p className="font-medium">
+                      {recette.instructions.filter((i) => i.text).length} étapes
+                    </p>
                   </div>
                 </div>
               </div>
@@ -582,5 +682,5 @@ export default function AjouterRecettePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

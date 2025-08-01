@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
   ArrowLeft,
   Clock,
@@ -16,78 +16,99 @@ import {
   Star,
   Edit2,
   Trash2,
-} from "lucide-react"
-import { useState } from "react"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
-import { useRecettes } from "@/contexts/recettes-context"
-import { useRouter } from "next/navigation"
+} from "lucide-react";
+import { useState } from "react";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
+import { useRecettes } from "@/contexts/recettes-context";
+import { useRouter } from "next/navigation";
 
 interface RecettePageProps {
   params: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 export default function RecettePage({ params }: RecettePageProps) {
-  const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { getRecetteById, deleteRecette, toggleLike } = useRecettes()
-  const router = useRouter()
-  const [servings, setServings] = useState(4)
-  const [ingredients, setIngredients] = useState<Array<{ name: string; quantity: string; checked: boolean }>>([])
-  const [instructions, setInstructions] = useState<Array<{ text: string; completed: boolean }>>([])
-  const [activeTab, setActiveTab] = useState<"ingredients" | "instructions" | "tips">("ingredients")
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const { playBackSound, playClickSound } = useAppSoundsSimple();
+  const { getRecetteById, deleteRecette, toggleLike } = useRecettes();
+  const router = useRouter();
+  const [servings, setServings] = useState(4);
+  const [ingredients, setIngredients] = useState<
+    Array<{ name: string; quantity: string; checked: boolean }>
+  >([]);
+  const [instructions, setInstructions] = useState<
+    Array<{ text: string; completed: boolean }>
+  >([]);
+  const [activeTab, setActiveTab] = useState<
+    "ingredients" | "instructions" | "tips"
+  >("ingredients");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const recette = getRecetteById(Number.parseInt(params.id))
+  const recette = getRecetteById(Number.parseInt(params.id));
 
   // Initialiser les états avec les données de la recette
   useState(() => {
     if (recette) {
-      setIngredients(recette.ingredients.map((ing) => ({ ...ing, checked: false })))
-      setInstructions(recette.instructions.map((inst, index) => ({ text: inst.text, completed: false })))
-      setServings(recette.servings)
+      setIngredients(
+        recette.ingredients.map((ing) => ({ ...ing, checked: false }))
+      );
+      setInstructions(
+        recette.instructions.map((inst, index) => ({
+          text: inst.text,
+          completed: false,
+        }))
+      );
+      setServings(recette.servings);
     }
-  })
+  });
 
   const handleBackClick = () => {
-    console.log("Back button clicked!")
-    playBackSound()
-  }
+    console.log("Back button clicked!");
+    playBackSound();
+  };
 
   const handleLikeClick = () => {
     if (recette) {
-      playClickSound()
-      toggleLike(recette.id)
+      playClickSound();
+      toggleLike(recette.id);
     }
-  }
+  };
 
   const handleDeleteRecette = () => {
     if (recette) {
-      playClickSound()
-      deleteRecette(recette.id)
-      router.push("/recettes")
+      playClickSound();
+      deleteRecette(recette.id);
+      router.push("/recettes");
     }
-  }
+  };
 
   const handleIngredientCheck = (index: number) => {
-    playClickSound()
+    playClickSound();
     setIngredients((prev) =>
-      prev.map((ingredient, i) => (i === index ? { ...ingredient, checked: !ingredient.checked } : ingredient)),
-    )
-  }
+      prev.map((ingredient, i) =>
+        i === index
+          ? { ...ingredient, checked: !ingredient.checked }
+          : ingredient
+      )
+    );
+  };
 
   const handleInstructionComplete = (index: number) => {
-    playClickSound()
+    playClickSound();
     setInstructions((prev) =>
-      prev.map((instruction, i) => (i === index ? { ...instruction, completed: !instruction.completed } : instruction)),
-    )
-  }
+      prev.map((instruction, i) =>
+        i === index
+          ? { ...instruction, completed: !instruction.completed }
+          : instruction
+      )
+    );
+  };
 
   const adjustServings = (change: number) => {
-    playClickSound()
-    const newServings = Math.max(1, servings + change)
-    setServings(newServings)
-  }
+    playClickSound();
+    const newServings = Math.max(1, servings + change);
+    setServings(newServings);
+  };
 
   if (!recette) {
     return (
@@ -95,12 +116,15 @@ export default function RecettePage({ params }: RecettePageProps) {
         <div className="text-center">
           <ChefHat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <p className="text-gray-600 text-lg">Recette non trouvée 🥺</p>
-          <Button asChild className="mt-4 bg-gradient-to-r from-pink-500 to-rose-500">
+          <Button
+            asChild
+            className="mt-4 bg-gradient-to-r from-pink-500 to-rose-500"
+          >
             <Link href="/recettes">Retour aux recettes</Link>
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -113,22 +137,28 @@ export default function RecettePage({ params }: RecettePageProps) {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 className="w-8 h-8 text-red-500" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Supprimer la recette ?</h3>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                Supprimer la recette ?
+              </h3>
               <p className="text-gray-600 mb-6">
-                Cette action est irréversible. Es-tu sûre de vouloir supprimer cette recette ?
+                Cette action est irréversible. Es-tu sûre de vouloir supprimer
+                cette recette ?
               </p>
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
                   onClick={() => {
-                    playClickSound()
-                    setShowDeleteConfirm(false)
+                    playClickSound();
+                    setShowDeleteConfirm(false);
                   }}
                   className="flex-1 border-gray-200 hover:bg-gray-50"
                 >
                   Annuler
                 </Button>
-                <Button onClick={handleDeleteRecette} className="flex-1 bg-red-500 hover:bg-red-600 text-white">
+                <Button
+                  onClick={handleDeleteRecette}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                >
                   Supprimer
                 </Button>
               </div>
@@ -154,12 +184,19 @@ export default function RecettePage({ params }: RecettePageProps) {
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">{recette.title}</h1>
+              <h1 className="text-white font-semibold text-xl">
+                {recette.title}
+              </h1>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <Button asChild variant="ghost" size="sm" className="text-white hover:bg-white/20 p-2">
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 p-2"
+            >
               <Link href={`/recettes/${recette.id}/modifier`}>
                 <Edit2 className="w-5 h-5" />
               </Link>
@@ -168,17 +205,28 @@ export default function RecettePage({ params }: RecettePageProps) {
               variant="ghost"
               size="sm"
               onClick={() => {
-                playClickSound()
-                setShowDeleteConfirm(true)
+                playClickSound();
+                setShowDeleteConfirm(true);
               }}
               className="text-white hover:bg-white/20 p-2"
             >
               <Trash2 className="w-5 h-5" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleLikeClick} className="text-white hover:bg-white/20 p-2">
-              <Heart className={`w-5 h-5 ${recette.liked ? "fill-current text-red-300" : ""}`} />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLikeClick}
+              className="text-white hover:bg-white/20 p-2"
+            >
+              <Heart
+                className={`w-5 h-5 ${recette.liked ? "fill-current text-red-300" : ""}`}
+              />
             </Button>
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-white hover:bg-white/20 p-2"
+            >
               <Share2 className="w-5 h-5" />
             </Button>
           </div>
@@ -190,7 +238,10 @@ export default function RecettePage({ params }: RecettePageProps) {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6 animate-fade-in-up">
           <div className="relative">
             <img
-              src={recette.image || "/placeholder.svg?height=400&width=600&query=recette"}
+              src={
+                recette.image ||
+                "/placeholder.svg?height=400&width=600&query=recette"
+              }
               alt={recette.title}
               className="w-full h-64 md:h-80 object-cover"
             />
@@ -208,7 +259,9 @@ export default function RecettePage({ params }: RecettePageProps) {
           </div>
 
           <div className="p-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">{recette.title}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+              {recette.title}
+            </h1>
             <p className="text-gray-600 mb-4">{recette.description}</p>
 
             {/* Recipe Info */}
@@ -225,7 +278,9 @@ export default function RecettePage({ params }: RecettePageProps) {
               <div className="text-center p-3 bg-rose-50 rounded-lg">
                 <Timer className="w-5 h-5 text-rose-500 mx-auto mb-1" />
                 <p className="text-sm text-gray-600">Préparation</p>
-                <p className="font-semibold text-gray-800">{recette.prepTime}</p>
+                <p className="font-semibold text-gray-800">
+                  {recette.prepTime}
+                </p>
               </div>
               <div className="text-center p-3 bg-pink-50 rounded-lg">
                 <Users className="w-5 h-5 text-pink-500 mx-auto mb-1" />
@@ -239,7 +294,9 @@ export default function RecettePage({ params }: RecettePageProps) {
                   >
                     <Minus className="w-3 h-3" />
                   </Button>
-                  <span className="font-semibold text-gray-800 min-w-[2rem] text-center">{servings}</span>
+                  <span className="font-semibold text-gray-800 min-w-[2rem] text-center">
+                    {servings}
+                  </span>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -253,18 +310,24 @@ export default function RecettePage({ params }: RecettePageProps) {
               <div className="text-center p-3 bg-rose-50 rounded-lg">
                 <ChefHat className="w-5 h-5 text-rose-500 mx-auto mb-1" />
                 <p className="text-sm text-gray-600">Difficulté</p>
-                <p className="font-semibold text-gray-800">{recette.difficulty}</p>
+                <p className="font-semibold text-gray-800">
+                  {recette.difficulty}
+                </p>
               </div>
             </div>
 
             {/* Nutrition Info */}
             {recette.nutrition && (
               <div className="bg-gradient-to-r from-pink-100 to-rose-100 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-800 mb-2">Informations nutritionnelles (par portion)</h3>
+                <h3 className="font-semibold text-gray-800 mb-2">
+                  Informations nutritionnelles (par portion)
+                </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div className="text-center">
                     <p className="text-gray-600">Calories</p>
-                    <p className="font-semibold">{recette.nutrition.calories}</p>
+                    <p className="font-semibold">
+                      {recette.nutrition.calories}
+                    </p>
                   </div>
                   <div className="text-center">
                     <p className="text-gray-600">Protéines</p>
@@ -285,7 +348,10 @@ export default function RecettePage({ params }: RecettePageProps) {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-2xl shadow-lg mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+        <div
+          className="bg-white rounded-2xl shadow-lg mb-6 animate-fade-in-up"
+          style={{ animationDelay: "0.1s" }}
+        >
           <div className="flex border-b border-gray-200">
             {[
               { key: "ingredients", label: "Ingrédients", icon: "🥄" },
@@ -295,8 +361,8 @@ export default function RecettePage({ params }: RecettePageProps) {
               <button
                 key={tab.key}
                 onClick={() => {
-                  playClickSound()
-                  setActiveTab(tab.key as typeof activeTab)
+                  playClickSound();
+                  setActiveTab(tab.key as typeof activeTab);
                 }}
                 className={`flex-1 p-4 text-center font-medium transition-colors ${
                   activeTab === tab.key
@@ -319,7 +385,8 @@ export default function RecettePage({ params }: RecettePageProps) {
                     Ingrédients pour {servings} portion{servings > 1 ? "s" : ""}
                   </h3>
                   <span className="text-sm text-gray-500">
-                    {ingredients.filter((i) => i.checked).length}/{ingredients.length} cochés
+                    {ingredients.filter((i) => i.checked).length}/
+                    {ingredients.length} cochés
                   </span>
                 </div>
                 {ingredients.map((ingredient, index) => (
@@ -334,12 +401,18 @@ export default function RecettePage({ params }: RecettePageProps) {
                   >
                     <div
                       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                        ingredient.checked ? "bg-green-500 border-green-500" : "border-gray-300"
+                        ingredient.checked
+                          ? "bg-green-500 border-green-500"
+                          : "border-gray-300"
                       }`}
                     >
-                      {ingredient.checked && <CheckCircle2 className="w-3 h-3 text-white" />}
+                      {ingredient.checked && (
+                        <CheckCircle2 className="w-3 h-3 text-white" />
+                      )}
                     </div>
-                    <span className={`flex-1 ${ingredient.checked ? "line-through text-gray-500" : "text-gray-800"}`}>
+                    <span
+                      className={`flex-1 ${ingredient.checked ? "line-through text-gray-500" : "text-gray-800"}`}
+                    >
                       {ingredient.name}
                     </span>
                     <span
@@ -356,9 +429,12 @@ export default function RecettePage({ params }: RecettePageProps) {
             {activeTab === "instructions" && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Instructions</h3>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    Instructions
+                  </h3>
                   <span className="text-sm text-gray-500">
-                    {instructions.filter((i) => i.completed).length}/{instructions.length} terminées
+                    {instructions.filter((i) => i.completed).length}/
+                    {instructions.length} terminées
                   </span>
                 </div>
                 {instructions.map((instruction, index) => (
@@ -382,12 +458,16 @@ export default function RecettePage({ params }: RecettePageProps) {
                         {instruction.completed ? (
                           <CheckCircle2 className="w-4 h-4 text-white" />
                         ) : (
-                          <span className="text-sm font-medium text-pink-600">{index + 1}</span>
+                          <span className="text-sm font-medium text-pink-600">
+                            {index + 1}
+                          </span>
                         )}
                       </button>
                       <p
                         className={`text-gray-800 leading-relaxed ${
-                          instruction.completed ? "line-through text-gray-500" : ""
+                          instruction.completed
+                            ? "line-through text-gray-500"
+                            : ""
                         }`}
                       >
                         {instruction.text}
@@ -401,7 +481,9 @@ export default function RecettePage({ params }: RecettePageProps) {
             {/* Tips Tab */}
             {activeTab === "tips" && (
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">Conseils de chef 👩‍🍳</h3>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
+                  Conseils de chef 👩‍🍳
+                </h3>
                 {recette.tips.map((tip, index) => (
                   <div
                     key={index}
@@ -417,13 +499,19 @@ export default function RecettePage({ params }: RecettePageProps) {
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+        <div
+          className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up"
+          style={{ animationDelay: "0.2s" }}
+        >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Button className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
               <Plus className="w-4 h-4 mr-2" />
               Ajouter à ma liste de courses
             </Button>
-            <Button variant="outline" className="border-pink-200 hover:bg-pink-50 bg-transparent">
+            <Button
+              variant="outline"
+              className="border-pink-200 hover:bg-pink-50 bg-transparent"
+            >
               <Timer className="w-4 h-4 mr-2" />
               Démarrer le minuteur
             </Button>
@@ -431,5 +519,5 @@ export default function RecettePage({ params }: RecettePageProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

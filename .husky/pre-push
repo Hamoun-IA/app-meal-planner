@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Vérification du code avant push..."
+
+# Vérification TypeScript
+echo "📝 Vérification TypeScript..."
+npx tsc --noEmit
+
+# Linting
+echo "🧹 Linting..."
+npm run lint
+
+# Formatage
+echo "💅 Vérification du formatage..."
+npm run format:check
+
+echo "✅ Toutes les vérifications sont passées !" 

@@ -1,50 +1,56 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { TransitionOverlay } from "@/components/transition-overlay"
-import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
-import { PWAUpdatePrompt } from "@/components/pwa-update-prompt"
-import { OfflineIndicator } from "@/components/offline-indicator"
-import { Calendar, ChefHat, ShoppingCart, Settings, Sparkles } from "lucide-react"
-import { useState, useCallback, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { Button } from "@/components/ui/button";
+import { TransitionOverlay } from "@/components/transition-overlay";
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt";
+import { PWAUpdatePrompt } from "@/components/pwa-update-prompt";
+import { OfflineIndicator } from "@/components/offline-indicator";
+import {
+  Calendar,
+  ChefHat,
+  ShoppingCart,
+  Settings,
+  Sparkles,
+} from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 
 export default function Dashboard() {
-  const [showTransition, setShowTransition] = useState(false)
-  const [targetHref, setTargetHref] = useState("")
-  const [clickedButton, setClickedButton] = useState<number | null>(null)
-  const [swSupported, setSWSupported] = useState(false)
-  const router = useRouter()
-  const { playMenuClickSound } = useAppSoundsSimple()
+  const [showTransition, setShowTransition] = useState(false);
+  const [targetHref, setTargetHref] = useState("");
+  const [clickedButton, setClickedButton] = useState<number | null>(null);
+  const [swSupported, setSWSupported] = useState(false);
+  const router = useRouter();
+  const { playMenuClickSound } = useAppSoundsSimple();
 
   useEffect(() => {
     // Vérifier le support des Service Workers
-    setSWSupported("serviceWorker" in navigator)
-  }, [])
+    setSWSupported("serviceWorker" in navigator);
+  }, []);
 
   const handleMenuClick = useCallback(
     (href: string, buttonId: number) => {
       // Immediate visual feedback
-      setClickedButton(buttonId)
+      setClickedButton(buttonId);
 
       // Play sound immediately
-      playMenuClickSound()
+      playMenuClickSound();
 
       // Start transition
-      setTargetHref(href)
-      setShowTransition(true)
+      setTargetHref(href);
+      setShowTransition(true);
 
       // Reset visual feedback
-      setTimeout(() => setClickedButton(null), 150)
+      setTimeout(() => setClickedButton(null), 150);
     },
-    [playMenuClickSound],
-  )
+    [playMenuClickSound]
+  );
 
   const handleTransitionComplete = useCallback(() => {
-    setShowTransition(false)
-    router.push(targetHref)
-  }, [router, targetHref])
+    setShowTransition(false);
+    router.push(targetHref);
+  }, [router, targetHref]);
 
   const menuItems = [
     {
@@ -97,7 +103,7 @@ export default function Dashboard() {
       hoverGradient: "from-pink-700 to-rose-700",
       activeGradient: "from-pink-800 to-rose-800",
     },
-  ]
+  ];
 
   return (
     <>
@@ -118,14 +124,26 @@ export default function Dashboard() {
         <div className="absolute bottom-20 right-20 w-8 h-8 bg-rose-300/30 rounded-full blur-md animate-float-fast delay-700"></div>
 
         {/* Floating hearts */}
-        <div className="absolute top-32 right-1/4 text-pink-300/40 text-lg animate-float-heart">💖</div>
-        <div className="absolute bottom-40 left-1/4 text-rose-300/30 text-sm animate-float-heart delay-800">💕</div>
-        <div className="absolute top-1/2 right-1/6 text-pink-400/30 text-xs animate-float-heart delay-1600">💗</div>
+        <div className="absolute top-32 right-1/4 text-pink-300/40 text-lg animate-float-heart">
+          💖
+        </div>
+        <div className="absolute bottom-40 left-1/4 text-rose-300/30 text-sm animate-float-heart delay-800">
+          💕
+        </div>
+        <div className="absolute top-1/2 right-1/6 text-pink-400/30 text-xs animate-float-heart delay-1600">
+          💗
+        </div>
 
         {/* Stars */}
-        <div className="absolute top-1/4 left-1/6 text-pink-300/40 text-sm animate-twinkle">✨</div>
-        <div className="absolute bottom-1/3 right-1/3 text-rose-300/50 text-xs animate-twinkle delay-400">⭐</div>
-        <div className="absolute top-2/3 left-1/3 text-pink-400/30 text-lg animate-twinkle delay-1200">✨</div>
+        <div className="absolute top-1/4 left-1/6 text-pink-300/40 text-sm animate-twinkle">
+          ✨
+        </div>
+        <div className="absolute bottom-1/3 right-1/3 text-rose-300/50 text-xs animate-twinkle delay-400">
+          ⭐
+        </div>
+        <div className="absolute top-2/3 left-1/3 text-pink-400/30 text-lg animate-twinkle delay-1200">
+          ✨
+        </div>
 
         <div className="max-w-md mx-auto pt-8 pb-8">
           {/* Header */}
@@ -138,16 +156,20 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent mb-2 font-serif">
               Babounette
             </h1>
-            <p className="text-pink-600/70 text-sm">Que veux-tu faire aujourd'hui ? ✨</p>
+            <p className="text-pink-600/70 text-sm">
+              Que veux-tu faire aujourd'hui ? ✨
+            </p>
           </div>
 
           {/* Menu Buttons */}
           <div className="space-y-4">
             {menuItems.map((item, index) => {
-              const IconComponent = item.icon
-              const isClicked = clickedButton === item.id
-              const gradientClass = isClicked ? item.activeGradient : item.gradient
-              const hoverGradientClass = item.hoverGradient
+              const IconComponent = item.icon;
+              const isClicked = clickedButton === item.id;
+              const gradientClass = isClicked
+                ? item.activeGradient
+                : item.gradient;
+              const hoverGradientClass = item.hoverGradient;
 
               return (
                 <Button
@@ -183,7 +205,9 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 text-left">
                         <h3 className="font-semibold text-lg">{item.title}</h3>
-                        <p className="text-white/80 text-sm">{item.description}</p>
+                        <p className="text-white/80 text-sm">
+                          {item.description}
+                        </p>
                       </div>
                       <div
                         className={`
@@ -192,30 +216,52 @@ export default function Dashboard() {
                         ${isClicked ? "opacity-100 translate-x-1" : ""}
                       `}
                       >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 5l7 7-7 7"
+                          />
                         </svg>
                       </div>
                     </div>
                   </div>
                 </Button>
-              )
+              );
             })}
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-12 animate-fade-in-up" style={{ animationDelay: "0.8s" }}>
+          <div
+            className="text-center mt-12 animate-fade-in-up"
+            style={{ animationDelay: "0.8s" }}
+          >
             <div className="flex justify-center space-x-2 text-pink-400 mb-4">
               <span className="text-lg animate-bounce-gentle">💖</span>
-              <span className="text-sm animate-bounce-gentle delay-100">✨</span>
-              <span className="text-lg animate-bounce-gentle delay-200">💖</span>
+              <span className="text-sm animate-bounce-gentle delay-100">
+                ✨
+              </span>
+              <span className="text-lg animate-bounce-gentle delay-200">
+                💖
+              </span>
             </div>
-            <p className="text-pink-500/60 text-xs">Créé avec amour pour toi 💕</p>
+            <p className="text-pink-500/60 text-xs">
+              Créé avec amour pour toi 💕
+            </p>
           </div>
         </div>
       </div>
 
-      <TransitionOverlay isVisible={showTransition} onComplete={handleTransitionComplete} />
+      <TransitionOverlay
+        isVisible={showTransition}
+        onComplete={handleTransitionComplete}
+      />
     </>
-  )
+  );
 }

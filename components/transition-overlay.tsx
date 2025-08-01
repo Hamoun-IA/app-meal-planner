@@ -1,37 +1,40 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 
 interface TransitionOverlayProps {
-  isVisible: boolean
-  onComplete: () => void
+  isVisible: boolean;
+  onComplete: () => void;
 }
 
-export function TransitionOverlay({ isVisible, onComplete }: TransitionOverlayProps) {
-  const [fadeOut, setFadeOut] = useState(false)
+export function TransitionOverlay({
+  isVisible,
+  onComplete,
+}: TransitionOverlayProps) {
+  const [fadeOut, setFadeOut] = useState(false);
 
   useEffect(() => {
     if (isVisible) {
-      setFadeOut(false)
+      setFadeOut(false);
 
       // Démarrer le fade out après 1.5 secondes
       const fadeTimer = setTimeout(() => {
-        setFadeOut(true)
-      }, 1500)
+        setFadeOut(true);
+      }, 1500);
 
       // Terminer la transition après 2 secondes
       const completeTimer = setTimeout(() => {
-        onComplete()
-      }, 2000)
+        onComplete();
+      }, 2000);
 
       return () => {
-        clearTimeout(fadeTimer)
-        clearTimeout(completeTimer)
-      }
+        clearTimeout(fadeTimer);
+        clearTimeout(completeTimer);
+      };
     }
-  }, [isVisible, onComplete])
+  }, [isVisible, onComplete]);
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
 
   return (
     <div
@@ -46,10 +49,18 @@ export function TransitionOverlay({ isVisible, onComplete }: TransitionOverlayPr
           </div>
 
           {/* Sparkles around logo */}
-          <div className="absolute -top-2 -right-2 text-xl animate-sparkle-1">✨</div>
-          <div className="absolute -bottom-2 -left-2 text-lg animate-sparkle-2">💖</div>
-          <div className="absolute top-1/2 -left-3 text-sm animate-sparkle-3">⭐</div>
-          <div className="absolute top-1/2 -right-3 text-sm animate-sparkle-4">💫</div>
+          <div className="absolute -top-2 -right-2 text-xl animate-sparkle-1">
+            ✨
+          </div>
+          <div className="absolute -bottom-2 -left-2 text-lg animate-sparkle-2">
+            💖
+          </div>
+          <div className="absolute top-1/2 -left-3 text-sm animate-sparkle-3">
+            ⭐
+          </div>
+          <div className="absolute top-1/2 -right-3 text-sm animate-sparkle-4">
+            💫
+          </div>
         </div>
 
         {/* Brand name */}
@@ -57,7 +68,9 @@ export function TransitionOverlay({ isVisible, onComplete }: TransitionOverlayPr
           <h1 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent animate-brand-appear">
             Chargement...
           </h1>
-          <p className="text-pink-600/80 text-sm animate-tagline-appear">✨ Un instant ma belle ✨</p>
+          <p className="text-pink-600/80 text-sm animate-tagline-appear">
+            ✨ Un instant ma belle ✨
+          </p>
         </div>
 
         {/* Loading indicator */}
@@ -74,5 +87,5 @@ export function TransitionOverlay({ isVisible, onComplete }: TransitionOverlayPr
       <div className="absolute bottom-32 left-40 w-5 h-5 bg-pink-400/30 rounded-full animate-bg-particle-3"></div>
       <div className="absolute bottom-20 right-20 w-2 h-2 bg-rose-400/60 rounded-full animate-bg-particle-4"></div>
     </div>
-  )
+  );
 }

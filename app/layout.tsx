@@ -1,11 +1,11 @@
-import type React from "react"
-import type { Metadata, Viewport } from "next"
-import { Inter } from "next/font/google"
-import "./globals.css"
-import { SettingsProvider } from "@/contexts/settings-context"
-import { RecettesProvider } from "@/contexts/recettes-context"
+import type React from "react";
+import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { SettingsProvider } from "@/contexts/settings-context";
+import { RecettesProvider } from "@/contexts/recettes-context";
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Assistante Babounette",
@@ -56,7 +56,14 @@ export const metadata: Metadata = {
   applicationName: "Assistante Babounette",
   authors: [{ name: "Babounette Team" }],
   generator: "Next.js",
-  keywords: ["assistante", "recettes", "courses", "calendrier", "productivité", "lifestyle"],
+  keywords: [
+    "assistante",
+    "recettes",
+    "courses",
+    "calendrier",
+    "productivité",
+    "lifestyle",
+  ],
   referrer: "origin-when-cross-origin",
   creator: "Babounette Team",
   publisher: "Babounette",
@@ -75,7 +82,8 @@ export const metadata: Metadata = {
     url: "https://babounette.app",
     siteName: "Assistante Babounette",
     title: "Assistante Babounette - Ton assistante magique",
-    description: "Ton assistante magique personnelle pour gérer tes recettes, courses, calendrier et plus encore !",
+    description:
+      "Ton assistante magique personnelle pour gérer tes recettes, courses, calendrier et plus encore !",
     images: [
       {
         url: "/og-image.png",
@@ -102,7 +110,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
-}
+};
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -115,12 +123,12 @@ export const viewport: Viewport = {
   ],
   colorScheme: "light",
   viewportFit: "cover",
-}
+};
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: React.ReactNode;
 }) {
   return (
     <html lang="fr">
@@ -134,16 +142,49 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
 
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
-        <link rel="mask-icon" href="/icons/safari-pinned-tab.svg" color="#ec4899" />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/icons/apple-touch-icon.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/icons/favicon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/icons/favicon-16x16.png"
+        />
+        <link
+          rel="mask-icon"
+          href="/icons/safari-pinned-tab.svg"
+          color="#ec4899"
+        />
         <link rel="shortcut icon" href="/favicon.ico" />
 
         {/* Preload critical resources */}
-        <link rel="preload" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/11L-Clic_de_bouton_girly-1754003907888-JLmi4woLnORJ8q2N7JzYlWZDfsP6Tv.mp3" as="audio" type="audio/mpeg" />
-        <link rel="preload" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/girlyclick-m35wgd6n66cyCgXLprXDMXMNnmyAQY.mp3" as="audio" type="audio/mpeg" />
-        <link rel="preload" href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fairyclick-hndPdZFszE6Klei4r4ySyWDfckMVR2.mp3" as="audio" type="audio/mpeg" />
+        <link
+          rel="preload"
+          href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/11L-Clic_de_bouton_girly-1754003907888-JLmi4woLnORJ8q2N7JzYlWZDfsP6Tv.mp3"
+          as="audio"
+          type="audio/mpeg"
+        />
+        <link
+          rel="preload"
+          href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/girlyclick-m35wgd6n66cyCgXLprXDMXMNnmyAQY.mp3"
+          as="audio"
+          type="audio/mpeg"
+        />
+        <link
+          rel="preload"
+          href="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fairyclick-hndPdZFszE6Klei4r4ySyWDfckMVR2.mp3"
+          as="audio"
+          type="audio/mpeg"
+        />
 
         {/* DNS Prefetch */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
@@ -155,5 +196,5 @@ export default function RootLayout({
         </SettingsProvider>
       </body>
     </html>
-  )
+  );
 }

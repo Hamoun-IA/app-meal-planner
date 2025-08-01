@@ -1,18 +1,26 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  type ReactNode,
+} from "react";
 
 interface SettingsContextType {
   settings: {
-    notifications: boolean
-    darkMode: boolean
-    sounds: boolean
-    autoSync: boolean
-  }
-  updateSetting: (key: string, value: boolean) => void
+    notifications: boolean;
+    darkMode: boolean;
+    sounds: boolean;
+    autoSync: boolean;
+  };
+  updateSetting: (key: string, value: boolean) => void;
 }
 
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
+const SettingsContext = createContext<SettingsContextType | undefined>(
+  undefined
+);
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState({
@@ -20,37 +28,41 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     darkMode: false,
     sounds: true,
     autoSync: true,
-  })
+  });
 
   // Charger les paramètres depuis localStorage au démarrage
   useEffect(() => {
-    const savedSettings = localStorage.getItem("babounette-settings")
+    const savedSettings = localStorage.getItem("babounette-settings");
     if (savedSettings) {
       try {
-        const parsed = JSON.parse(savedSettings)
-        setSettings(parsed)
+        const parsed = JSON.parse(savedSettings);
+        setSettings(parsed);
       } catch (error) {
-        console.error("Error loading settings:", error)
+        console.error("Error loading settings:", error);
       }
     }
-  }, [])
+  }, []);
 
   // Sauvegarder les paramètres dans localStorage quand ils changent
   useEffect(() => {
-    localStorage.setItem("babounette-settings", JSON.stringify(settings))
-  }, [settings])
+    localStorage.setItem("babounette-settings", JSON.stringify(settings));
+  }, [settings]);
 
   const updateSetting = (key: string, value: boolean) => {
-    setSettings((prev) => ({ ...prev, [key]: value }))
-  }
+    setSettings((prev) => ({ ...prev, [key]: value }));
+  };
 
-  return <SettingsContext.Provider value={{ settings, updateSetting }}>{children}</SettingsContext.Provider>
+  return (
+    <SettingsContext.Provider value={{ settings, updateSetting }}>
+      {children}
+    </SettingsContext.Provider>
+  );
 }
 
 export function useSettings() {
-  const context = useContext(SettingsContext)
+  const context = useContext(SettingsContext);
   if (context === undefined) {
-    throw new Error("useSettings must be used within a SettingsProvider")
+    throw new Error("useSettings must be used within a SettingsProvider");
   }
-  return context
+  return context;
 }

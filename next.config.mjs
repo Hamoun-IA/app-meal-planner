@@ -4,59 +4,59 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/sw.js',
+        source: "/sw.js",
         headers: [
           {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8',
+            key: "Content-Type",
+            value: "application/javascript; charset=utf-8",
           },
           {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate',
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
           },
           {
-            key: 'Service-Worker-Allowed',
-            value: '/',
+            key: "Service-Worker-Allowed",
+            value: "/",
           },
         ],
       },
       {
-        source: '/manifest.json',
+        source: "/manifest.json",
         headers: [
           {
-            key: 'Content-Type',
-            value: 'application/manifest+json',
+            key: "Content-Type",
+            value: "application/manifest+json",
           },
         ],
       },
-    ]
+    ];
   },
-  
+
   // Optimisations pour PWA
   experimental: {
     optimizeCss: true,
   },
-  
+
   // Compression et optimisations
   compress: true,
-  
+
   // Images optimisées
   images: {
-    formats: ['image/webp', 'image/avif'],
+    formats: ["image/webp", "image/avif"],
     minimumCacheTTL: 60 * 60 * 24 * 30, // 30 jours
     unoptimized: true,
   },
-  
+
   // Réécritures pour PWA
   async rewrites() {
     return [
       {
-        source: '/sw.js',
-        destination: '/sw.js',
+        source: "/sw.js",
+        destination: "/sw.js",
       },
-    ]
+    ];
   },
-  
+
   // ESLint and TypeScript configurations
   eslint: {
     ignoreDuringBuilds: true,
@@ -64,6 +64,6 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;
