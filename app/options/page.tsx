@@ -6,12 +6,12 @@ import Link from "next/link"
 import { ArrowLeft, Bell, Moon, Palette, Settings, User, Volume2, CheckCircle, Music } from "lucide-react"
 import { useSettings } from "@/contexts/settings-context"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
-import { useAudioStatus } from "@/hooks/use-audio-status"
+// import { useAudioStatus } from "@/hooks/use-audio-status" // Removed import
 
 export default function OptionsPage() {
   const { settings, updateSetting } = useSettings()
-  const { playBackSound } = useAppSoundsSimple()
-  const { audioStatus } = useAudioStatus()
+  const { playBackSound, audioStatus } = useAppSoundsSimple() // Updated line
+  // const { audioStatus } = useAudioStatus() // Removed line
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
