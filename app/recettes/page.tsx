@@ -331,14 +331,14 @@ export default function RecettesPage() {
 
                   {/* Difficulty Options */}
                   {expandedFilter === "difficulty" && (
-                    <div className="grid grid-cols-2 gap-2 pl-4 animate-fade-in-up">
+                    <div className="flex flex-wrap gap-2 pl-4 animate-fade-in-up">
                       {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
                         <Button
                           key={difficulty}
                           variant="outline"
                           size="sm"
                           onClick={() => handleFilterChange("difficulty", difficulty)}
-                          className={`transition-all text-xs ${
+                          className={`transition-all text-xs px-3 py-1 h-auto ${
                             filters.difficulty.includes(difficulty)
                               ? "bg-purple-100 border-purple-300 text-purple-700"
                               : "border-gray-200 hover:bg-purple-50"
@@ -378,7 +378,7 @@ export default function RecettesPage() {
 
                   {/* Category Options */}
                   {expandedFilter === "category" && (
-                    <div className="grid grid-cols-2 gap-2 pl-4 animate-fade-in-up">
+                    <div className="flex flex-wrap gap-2 pl-4 animate-fade-in-up">
                       {["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"].map(
                         (category) => (
                           <Button
@@ -386,7 +386,7 @@ export default function RecettesPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => handleFilterChange("category", category)}
-                            className={`transition-all text-xs ${
+                            className={`transition-all text-xs px-3 py-1 h-auto ${
                               filters.category.includes(category)
                                 ? "bg-blue-100 border-blue-300 text-blue-700"
                                 : "border-gray-200 hover:bg-blue-50"
