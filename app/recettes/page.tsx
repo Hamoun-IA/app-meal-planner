@@ -3,13 +3,14 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { ArrowLeft, ChefHat, Clock, Heart, Search, Users } from "lucide-react"
+import { ArrowLeft, ChefHat, Clock, Heart, Search, Users, Grid3X3, List } from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
 export default function RecettesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const { playBackSound } = useAppSoundsSimple()
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -91,6 +92,30 @@ export default function RecettesPage() {
               <h1 className="text-white font-semibold text-xl">Mes Recettes</h1>
             </div>
           </div>
+
+          {/* View Mode Toggle */}
+          <div className="flex items-center space-x-2 bg-white/20 rounded-full p-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className={`rounded-full p-2 transition-all ${
+                viewMode === "grid" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
+              }`}
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className={`rounded-full p-2 transition-all ${
+                viewMode === "list" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -108,51 +133,111 @@ export default function RecettesPage() {
           </div>
         </div>
 
-        {/* Recipe Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredRecettes.map((recette, index) => (
-            <div
-              key={recette.id}
-              className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="relative">
-                <img
-                  src={recette.image || "/placeholder.svg"}
-                  alt={recette.title}
-                  className="w-full h-48 object-cover"
-                />
-                <button className="absolute top-3 right-3 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
-                  <Heart className={`w-5 h-5 ${recette.liked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
-                </button>
-                <div className="absolute bottom-3 left-3">
-                  <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {recette.category}
-                  </span>
-                </div>
-              </div>
-
-              <div className="p-4">
-                <h3 className="font-semibold text-lg text-gray-800 mb-2">{recette.title}</h3>
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                  <div className="flex items-center space-x-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{recette.time}</span>
+        {/* Recipe Display */}
+        {viewMode === "grid" ? (
+          // Mode Grille (existant)
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredRecettes.map((recette, index) => (
+              <div
+                key={recette.id}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-105 animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="relative">
+                  <img
+                    src={recette.image || "/placeholder.svg"}
+                    alt={recette.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <button className="absolute top-3 right-3 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
+                    <Heart className={`w-5 h-5 ${recette.liked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
+                  </button>
+                  <div className="absolute bottom-3 left-3">
+                    <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {recette.category}
+                    </span>
                   </div>
-                  <div className="flex items-center space-x-1">
-                    <Users className="w-4 h-4" />
-                    <span>{recette.servings} pers.</span>
-                  </div>
-                  <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs">{recette.difficulty}</span>
                 </div>
 
-                <Button className="w-full mt-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
-                  Voir la recette
-                </Button>
+                <div className="p-4">
+                  <h3 className="font-semibold text-lg text-gray-800 mb-2">{recette.title}</h3>
+                  <div className="flex items-center justify-between text-sm text-gray-600">
+                    <div className="flex items-center space-x-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{recette.time}</span>
+                    </div>
+                    <div className="flex items-center space-x-1">
+                      <Users className="w-4 h-4" />
+                      <span>{recette.servings} pers.</span>
+                    </div>
+                    <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs">
+                      {recette.difficulty}
+                    </span>
+                  </div>
+
+                  <Button className="w-full mt-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
+                    Voir la recette
+                  </Button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          // Mode Liste (nouveau)
+          <div className="space-y-4">
+            {filteredRecettes.map((recette, index) => (
+              <div
+                key={recette.id}
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 animate-fade-in-up"
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <div className="flex items-center p-4">
+                  <div className="relative flex-shrink-0 w-20 h-20 mr-4">
+                    <img
+                      src={recette.image || "/placeholder.svg"}
+                      alt={recette.title}
+                      className="w-full h-full object-cover rounded-xl"
+                    />
+                    <button className="absolute -top-1 -right-1 p-1 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                      <Heart className={`w-3 h-3 ${recette.liked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg text-gray-800 mb-1 truncate">{recette.title}</h3>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                          <div className="flex items-center space-x-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{recette.time}</span>
+                          </div>
+                          <div className="flex items-center space-x-1">
+                            <Users className="w-3 h-3" />
+                            <span>{recette.servings} pers.</span>
+                          </div>
+                          <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs">
+                            {recette.difficulty}
+                          </span>
+                        </div>
+                        <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-2 py-1 rounded-full text-xs font-medium">
+                          {recette.category}
+                        </span>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 flex-shrink-0"
+                      >
+                        Voir
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {filteredRecettes.length === 0 && (
           <div className="text-center py-12">
