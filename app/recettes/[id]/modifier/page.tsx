@@ -15,15 +15,15 @@ import {
   X,
   Save,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 import { useRecettes } from "@/contexts/recettes-context";
 import { useRouter } from "next/navigation";
 
 interface ModifierRecettePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function ModifierRecettePage({
@@ -48,7 +48,9 @@ export default function ModifierRecettePage({
     liked: false,
   });
 
-  const originalRecette = getRecetteById(Number.parseInt(params.id));
+  // Unwrap params avec React.use()
+  const { id } = use(params);
+  const originalRecette = getRecetteById(Number.parseInt(id));
 
   // Charger les données de la recette existante
   useEffect(() => {

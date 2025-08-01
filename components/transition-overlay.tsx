@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 interface TransitionOverlayProps {
   isVisible: boolean;
@@ -12,20 +13,24 @@ export function TransitionOverlay({
   onComplete,
 }: TransitionOverlayProps) {
   const [fadeOut, setFadeOut] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     if (isVisible) {
       setFadeOut(false);
 
-      // Démarrer le fade out après 1.5 secondes
+      // Naviguer immédiatement
+      onComplete();
+
+      // Démarrer le fade out après 1 seconde
       const fadeTimer = setTimeout(() => {
         setFadeOut(true);
-      }, 1500);
+      }, 1000);
 
-      // Terminer la transition après 2 secondes
+      // Terminer la transition après 1.5 secondes
       const completeTimer = setTimeout(() => {
-        onComplete();
-      }, 2000);
+        // La navigation a déjà eu lieu, on peut nettoyer
+      }, 1500);
 
       return () => {
         clearTimeout(fadeTimer);

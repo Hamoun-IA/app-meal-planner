@@ -17,15 +17,15 @@ import {
   Edit2,
   Trash2,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, use } from "react";
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 import { useRecettes } from "@/contexts/recettes-context";
 import { useRouter } from "next/navigation";
 
 interface RecettePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function RecettePage({ params }: RecettePageProps) {
@@ -44,7 +44,9 @@ export default function RecettePage({ params }: RecettePageProps) {
   >("ingredients");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const recette = getRecetteById(Number.parseInt(params.id));
+  // Unwrap params avec React.use()
+  const { id } = use(params);
+  const recette = getRecetteById(Number.parseInt(id));
 
   // Initialiser les états avec les données de la recette
   useState(() => {

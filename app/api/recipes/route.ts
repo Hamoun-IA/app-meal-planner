@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recipeService } from '../../../lib/services/recipe-service';
 import { z } from 'zod';
+import { authService } from '../../../lib/auth';
 
 // =============================================================================
 // SCHÉMAS DE VALIDATION
@@ -99,8 +100,9 @@ export async function POST(request: NextRequest) {
     // Validation des données
     const validatedData = CreateRecipeSchema.parse(body);
     
-    // TODO: Récupérer l'userId depuis l'authentification
-    const userId = 'test-user-id'; // Temporaire pour les tests
+    // Récupérer l'utilisateur de test via le service d'authentification
+    const testUser = await authService.getTestUser();
+    const userId = testUser.id;
     
     const recipe = await recipeService.createRecipe(userId, validatedData);
     
@@ -140,8 +142,9 @@ export async function PUT(request: NextRequest) {
     // Validation des données
     const validatedData = UpdateRecipeSchema.parse(data);
     
-    // TODO: Récupérer l'userId depuis l'authentification
-    const userId = 'test-user-id'; // Temporaire pour les tests
+    // Récupérer l'utilisateur de test via le service d'authentification
+    const testUser = await authService.getTestUser();
+    const userId = testUser.id;
     
     const recipe = await recipeService.updateRecipe(id, userId, validatedData);
     
@@ -178,8 +181,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
     
-    // TODO: Récupérer l'userId depuis l'authentification
-    const userId = 'test-user-id'; // Temporaire pour les tests
+    // Récupérer l'utilisateur de test via le service d'authentification
+    const testUser = await authService.getTestUser();
+    const userId = testUser.id;
     
     await recipeService.deleteRecipe(id, userId);
     
