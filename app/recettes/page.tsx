@@ -303,31 +303,59 @@ export default function RecettesPage() {
                 </h4>
 
                 {/* Filter Type Buttons */}
-                <div className="space-y-2">
-                  {/* Difficulty Filter Toggle */}
-                  <Button
-                    variant="outline"
-                    onClick={() => toggleFilterExpansion("difficulty")}
-                    className={`w-full justify-between transition-all ${
-                      filters.difficulty.length > 0
-                        ? "bg-purple-50 border-purple-200 text-purple-700"
-                        : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span className="flex items-center">
-                      Difficulté
-                      {filters.difficulty.length > 0 && (
-                        <span className="ml-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {filters.difficulty.length}
-                        </span>
+                <div className="space-y-3">
+                  {/* Filter Toggle Buttons - Side by side */}
+                  <div className="flex flex-wrap gap-2">
+                    {/* Difficulty Filter Toggle */}
+                    <Button
+                      variant="outline"
+                      onClick={() => toggleFilterExpansion("difficulty")}
+                      className={`justify-between transition-all px-3 py-2 h-auto ${
+                        filters.difficulty.length > 0
+                          ? "bg-purple-50 border-purple-200 text-purple-700"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        Difficulté
+                        {filters.difficulty.length > 0 && (
+                          <span className="ml-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {filters.difficulty.length}
+                          </span>
+                        )}
+                      </span>
+                      {expandedFilter === "difficulty" ? (
+                        <ChevronUp className="w-4 h-4 ml-2" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 ml-2" />
                       )}
-                    </span>
-                    {expandedFilter === "difficulty" ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </Button>
+                    </Button>
+
+                    {/* Category Filter Toggle */}
+                    <Button
+                      variant="outline"
+                      onClick={() => toggleFilterExpansion("category")}
+                      className={`justify-between transition-all px-3 py-2 h-auto ${
+                        filters.category.length > 0
+                          ? "bg-blue-50 border-blue-200 text-blue-700"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        Type de plat
+                        {filters.category.length > 0 && (
+                          <span className="ml-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {filters.category.length}
+                          </span>
+                        )}
+                      </span>
+                      {expandedFilter === "category" ? (
+                        <ChevronUp className="w-4 h-4 ml-2" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 ml-2" />
+                      )}
+                    </Button>
+                  </div>
 
                   {/* Difficulty Options */}
                   {expandedFilter === "difficulty" && (
@@ -350,31 +378,6 @@ export default function RecettesPage() {
                       ))}
                     </div>
                   )}
-
-                  {/* Category Filter Toggle */}
-                  <Button
-                    variant="outline"
-                    onClick={() => toggleFilterExpansion("category")}
-                    className={`w-full justify-between transition-all ${
-                      filters.category.length > 0
-                        ? "bg-blue-50 border-blue-200 text-blue-700"
-                        : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span className="flex items-center">
-                      Type de plat
-                      {filters.category.length > 0 && (
-                        <span className="ml-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {filters.category.length}
-                        </span>
-                      )}
-                    </span>
-                    {expandedFilter === "category" ? (
-                      <ChevronUp className="w-4 h-4" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4" />
-                    )}
-                  </Button>
 
                   {/* Category Options */}
                   {expandedFilter === "category" && (
