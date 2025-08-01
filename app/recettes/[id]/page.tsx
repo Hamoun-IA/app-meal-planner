@@ -20,7 +20,9 @@ import {
 import { useState, use } from "react";
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 import { useRecettes } from "@/contexts/recettes-context";
+import { useCourses } from "@/contexts/courses-context";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 interface RecettePageProps {
   params: Promise<{
@@ -31,6 +33,8 @@ interface RecettePageProps {
 export default function RecettePage({ params }: RecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple();
   const { getRecetteById, deleteRecette, toggleLike } = useRecettes();
+  const { addItems } = useCourses();
+  const { toast } = useToast();
   const router = useRouter();
   const [servings, setServings] = useState(4);
   const [ingredients, setIngredients] = useState<
@@ -110,6 +114,49 @@ export default function RecettePage({ params }: RecettePageProps) {
     playClickSound();
     const newServings = Math.max(1, servings + change);
     setServings(newServings);
+  };
+
+  const handleAddToShoppingList = () => {
+    playClickSound();
+    
+    // Récupérer les ingrédients cochés
+    const checkedIngredients = ingredients.filter(ingredient => ingredient.checked);
+    
+    if (checkedIngredients.length === 0) {
+      // Si aucun ingrédient n'est coché, ajouter tous les ingrédients
+      const allIngredients = ingredients.map(ingredient => ({
+        name: ingredient.name,
+        quantity: ingredient.quantity,
+        completed: false,
+        category: "Divers", // Catégorie par défaut
+        source: `Recette: ${recette?.title || "Recette"}`,
+      }));
+      
+      addItems(allIngredients);
+      
+      toast({
+        title: "Ingrédients ajoutés ! 🛒",
+        description: `${ingredients.length} ingrédient(s) ajouté(s) à ta liste de courses`,
+        duration: 3000,
+      });
+    } else {
+      // Ajouter seulement les ingrédients cochés
+      const selectedIngredients = checkedIngredients.map(ingredient => ({
+        name: ingredient.name,
+        quantity: ingredient.quantity,
+        completed: false,
+        category: "Divers", // Catégorie par défaut
+        source: `Recette: ${recette?.title || "Recette"}`,
+      }));
+      
+      addItems(selectedIngredients);
+      
+      toast({
+        title: "Ingrédients sélectionnés ajoutés ! 🛒",
+        description: `${checkedIngredients.length} ingrédient(s) ajouté(s) à ta liste de courses`,
+        duration: 3000,
+      });
+    }
   };
 
   if (!recette) {
@@ -506,9 +553,15 @@ export default function RecettePage({ params }: RecettePageProps) {
           style={{ animationDelay: "0.2s" }}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
+            <Button 
+              onClick={handleAddToShoppingList}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+            >
               <Plus className="w-4 h-4 mr-2" />
-              Ajouter à ma liste de courses
+              {ingredients.filter(i => i.checked).length > 0 
+                ? `Ajouter ${ingredients.filter(i => i.checked).length} ingrédient(s) sélectionné(s)`
+                : "Ajouter tous les ingrédients"
+              }
             </Button>
             <Button
               variant="outline"

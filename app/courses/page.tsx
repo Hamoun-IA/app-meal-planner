@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
+import { useCourses } from "@/contexts/courses-context";
 
 export default function CoursesPage() {
   const [newItem, setNewItem] = useState("");
@@ -25,26 +26,18 @@ export default function CoursesPage() {
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Divers");
 
-  const [categories, setCategories] = useState([
-    "Produits laitiers",
-    "Boulangerie",
-    "Fruits & Légumes",
-    "Épicerie sucrée",
-    "Viande & Poisson",
-    "Surgelés",
-    "Boissons",
-    "Hygiène & Beauté",
-    "Entretien",
-    "Divers",
-  ]);
-
-  const [items, setItems] = useState([
-    { id: 1, name: "Lait", completed: false, category: "Produits laitiers" },
-    { id: 2, name: "Pain", completed: true, category: "Boulangerie" },
-    { id: 3, name: "Pommes", completed: false, category: "Fruits & Légumes" },
-    { id: 4, name: "Chocolat", completed: false, category: "Épicerie sucrée" },
-    { id: 5, name: "Yaourts", completed: true, category: "Produits laitiers" },
-  ]);
+  const { 
+    items, 
+    categories, 
+    addItem, 
+    toggleItem, 
+    deleteItem, 
+    addCategory, 
+    deleteCategory, 
+    updateCategory,
+    getCompletedCount,
+    getTotalCount 
+  } = useCourses();
 
   const { playBackSound, playClickSound } = useAppSoundsSimple();
 
@@ -53,60 +46,42 @@ export default function CoursesPage() {
     playBackSound();
   };
 
-  const addItem = () => {
+  const handleAddItem = () => {
     if (!newItem.trim()) return;
 
     playClickSound();
-    const item = {
-      id: Date.now(),
+    addItem({
       name: newItem,
       completed: false,
       category: selectedCategory,
-    };
-
-    setItems([...items, item]);
+    });
     setNewItem("");
   };
 
-  const toggleItem = (id: number) => {
+  const handleToggleItem = (id: number) => {
     playClickSound();
-    setItems(
-      items.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
-    );
+    toggleItem(id);
   };
 
-  const deleteItem = (id: number) => {
+  const handleDeleteItem = (id: number) => {
     playClickSound();
-    setItems(items.filter((item) => item.id !== id));
+    deleteItem(id);
   };
 
   // Gestion des catégories
-  const addCategory = () => {
+  const handleAddCategory = () => {
     if (!newCategory.trim() || categories.includes(newCategory)) return;
 
     playClickSound();
-    setCategories([...categories, newCategory]);
+    addCategory(newCategory);
     setNewCategory("");
   };
 
-  const deleteCategory = (categoryToDelete: string) => {
+  const handleDeleteCategory = (categoryToDelete: string) => {
     if (categoryToDelete === "Divers") return; // Empêcher la suppression de "Divers"
 
     playClickSound();
-
-    // Déplacer tous les articles de cette catégorie vers "Divers"
-    setItems(
-      items.map((item) =>
-        item.category === categoryToDelete
-          ? { ...item, category: "Divers" }
-          : item
-      )
-    );
-
-    // Supprimer la catégorie
-    setCategories(categories.filter((cat) => cat !== categoryToDelete));
+    deleteCategory(categoryToDelete);
 
     // Si c'était la catégorie sélectionnée, basculer vers "Divers"
     if (selectedCategory === categoryToDelete) {
@@ -134,20 +109,7 @@ export default function CoursesPage() {
     playClickSound();
 
     // Mettre à jour le nom de la catégorie
-    setCategories(
-      categories.map((cat) =>
-        cat === editingCategory ? editCategoryName : cat
-      )
-    );
-
-    // Mettre à jour les articles avec le nouveau nom de catégorie
-    setItems(
-      items.map((item) =>
-        item.category === editingCategory
-          ? { ...item, category: editCategoryName }
-          : item
-      )
-    );
+    updateCategory(editingCategory!, editCategoryName);
 
     // Mettre à jour la catégorie sélectionnée si nécessaire
     if (selectedCategory === editingCategory) {
@@ -164,8 +126,8 @@ export default function CoursesPage() {
     setEditCategoryName("");
   };
 
-  const completedCount = items.filter((item) => item.completed).length;
-  const totalCount = items.length;
+  const completedCount = getCompletedCount();
+  const totalCount = getTotalCount();
 
   const displayedCategories = categories.filter((category) =>
     items.some((item) => item.category === category)
@@ -246,12 +208,12 @@ export default function CoursesPage() {
                 onChange={(e) => setNewCategory(e.target.value)}
                 placeholder="Nouvelle catégorie..."
                 className="flex-1 border-pink-200 focus:border-pink-400"
-                onKeyPress={(e) => e.key === "Enter" && addCategory()}
+                onKeyPress={(e) => e.key === "Enter" && handleAddCategory()}
               />
-              <Button
-                onClick={addCategory}
-                className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
-              >
+                              <Button
+                  onClick={handleAddCategory}
+                  className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                >
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
@@ -318,12 +280,12 @@ export default function CoursesPage() {
                           <Edit2 className="w-3 h-3" />
                         </Button>
                         {category !== "Divers" && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteCategory(category)}
-                            className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
-                          >
+                                                  <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteCategory(category)}
+                          className="h-8 w-8 p-0 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                        >
                             <Trash2 className="w-3 h-3" />
                           </Button>
                         )}
@@ -345,7 +307,7 @@ export default function CoursesPage() {
                 onChange={(e) => setNewItem(e.target.value)}
                 placeholder="Ajouter un article... 🛒"
                 className="flex-1 rounded-full border-pink-200 focus:border-pink-400"
-                onKeyPress={(e) => e.key === "Enter" && addItem()}
+                onKeyPress={(e) => e.key === "Enter" && handleAddItem()}
               />
               <select
                 value={selectedCategory}
@@ -362,7 +324,7 @@ export default function CoursesPage() {
                 ))}
               </select>
               <Button
-                onClick={addItem}
+                onClick={handleAddItem}
                 className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
               >
                 <Plus className="w-4 h-4" />
@@ -403,18 +365,30 @@ export default function CoursesPage() {
                     >
                       <Checkbox
                         checked={item.completed}
-                        onCheckedChange={() => toggleItem(item.id)}
+                        onCheckedChange={() => handleToggleItem(item.id)}
                         className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                       />
-                      <span
-                        className={`flex-1 ${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
-                      >
-                        {item.name}
-                      </span>
+                      <div className="flex-1">
+                        <span
+                          className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
+                        >
+                          {item.name}
+                        </span>
+                        {item.quantity && (
+                          <span className="text-sm text-pink-600 ml-2">
+                            {item.quantity}
+                          </span>
+                        )}
+                        {item.source && (
+                          <div className="text-xs text-gray-400 mt-1">
+                            {item.source}
+                          </div>
+                        )}
+                      </div>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deleteItem(item.id)}
+                        onClick={() => handleDeleteItem(item.id)}
                         className="text-gray-400 hover:text-red-500 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
