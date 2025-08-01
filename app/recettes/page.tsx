@@ -190,7 +190,7 @@ export default function RecettesPage() {
                     : "border-gray-200 hover:bg-pink-50"
                 }`}
               >
-                <span className="mr-2">Alphabétique</span>
+                <span className="mr-2">A-Z</span>
                 {sortBy === "alphabetical" &&
                   (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
               </Button>
