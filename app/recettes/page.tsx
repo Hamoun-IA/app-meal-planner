@@ -184,57 +184,49 @@ export default function RecettesPage() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4">
-        {/* Search Bar */}
+        {/* Search Bar with Filter Button */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <Input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Rechercher une recette... 🍳"
-              className="pl-10 rounded-full border-pink-200 focus:border-pink-400"
-            />
-          </div>
-        </div>
-
-        {/* Mobile Filter/Sort Button */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Button
-                variant="outline"
-                onClick={() => setShowMobileFilters(!showMobileFilters)}
-                className="flex items-center space-x-2 border-pink-200 hover:bg-pink-50"
-              >
-                <Filter className="w-4 h-4" />
-                <span>Trier & Filtrer</span>
-                {(sortBy || filters.difficulty.length > 0) && (
-                  <span className="bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                    {(sortBy ? 1 : 0) + filters.difficulty.length}
-                  </span>
-                )}
-              </Button>
-
-              {/* Quick indicators */}
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                {sortBy && (
-                  <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs flex items-center">
-                    {sortBy === "alphabetical" ? "A-Z" : "Temps"}
-                    {sortOrder === "asc" ? (
-                      <ArrowUp className="w-3 h-3 ml-1" />
-                    ) : (
-                      <ArrowDown className="w-3 h-3 ml-1" />
-                    )}
-                  </span>
-                )}
-                {filters.difficulty.length > 0 && (
-                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
-                    {filters.difficulty.length} difficulté{filters.difficulty.length > 1 ? "s" : ""}
-                  </span>
-                )}
-              </div>
+          <div className="flex items-center space-x-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <Input
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Rechercher une recette... 🍳"
+                className="pl-10 rounded-full border-pink-200 focus:border-pink-400"
+              />
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              className="flex-shrink-0 p-3 border-pink-200 hover:bg-pink-50 rounded-full relative"
+            >
+              <Filter className="w-4 h-4" />
+              {(sortBy || filters.difficulty.length > 0) && (
+                <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {(sortBy ? 1 : 0) + filters.difficulty.length}
+                </span>
+              )}
+            </Button>
           </div>
+
+          {/* Quick indicators */}
+          {(sortBy || filters.difficulty.length > 0) && (
+            <div className="flex items-center space-x-2 text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
+              {sortBy && (
+                <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs flex items-center">
+                  {sortBy === "alphabetical" ? "A-Z" : "Temps"}
+                  {sortOrder === "asc" ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />}
+                </span>
+              )}
+              {filters.difficulty.length > 0 && (
+                <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
+                  {filters.difficulty.length} difficulté{filters.difficulty.length > 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Expandable Filter/Sort Panel */}
           {showMobileFilters && (
