@@ -39,10 +39,11 @@ export default function RecettesPage() {
   const [filters, setFilters] = useState({
     difficulty: [] as string[],
     category: [] as string[],
+    favorites: false, // Nouveau filtre pour les favoris
   });
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [expandedFilter, setExpandedFilter] = useState<
-    "difficulty" | "category" | null
+    "difficulty" | "category" | "favorites" | null
   >(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(
     null
@@ -79,6 +80,7 @@ export default function RecettesPage() {
     setFilters({
       difficulty: [],
       category: [],
+      favorites: false,
     });
   };
 
@@ -93,8 +95,9 @@ export default function RecettesPage() {
     const matchesCategory =
       filters.category.length === 0 ||
       filters.category.includes(recette.category);
+    const matchesFavorites = !filters.favorites || recette.liked;
 
-    return matchesSearch && matchesDifficulty && matchesCategory;
+    return matchesSearch && matchesDifficulty && matchesCategory && matchesFavorites;
   });
 
   const filteredAndSortedRecettes = filteredRecettes.sort((a, b) => {
@@ -129,7 +132,7 @@ export default function RecettesPage() {
     }
   };
 
-  const toggleFilterExpansion = (filterType: "difficulty" | "category") => {
+  const toggleFilterExpansion = (filterType: "difficulty" | "category" | "favorites") => {
     setExpandedFilter(expandedFilter === filterType ? null : filterType);
   };
 
@@ -291,11 +294,13 @@ export default function RecettesPage() {
               <Filter className="w-4 h-4" />
               {(sortBy ||
                 filters.difficulty.length > 0 ||
-                filters.category.length > 0) && (
+                filters.category.length > 0 ||
+                filters.favorites) && (
                 <span className="absolute -top-1 -right-1 bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
                   {(sortBy ? 1 : 0) +
                     filters.difficulty.length +
-                    filters.category.length}
+                    filters.category.length +
+                    (filters.favorites ? 1 : 0)}
                 </span>
               )}
             </Button>
@@ -304,7 +309,8 @@ export default function RecettesPage() {
           {/* Quick indicators */}
           {(sortBy ||
             filters.difficulty.length > 0 ||
-            filters.category.length > 0) && (
+            filters.category.length > 0 ||
+            filters.favorites) && (
             <div className="flex items-center space-x-2 text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
               {sortBy && (
                 <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs flex items-center">
@@ -330,6 +336,12 @@ export default function RecettesPage() {
                 <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
                   {filters.category.length} catégorie
                   {filters.category.length > 1 ? "s" : ""}
+                </span>
+              )}
+              {filters.favorites && (
+                <span className="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs flex items-center">
+                  <Heart className="w-3 h-3 mr-1" />
+                  Favoris
                 </span>
               )}
             </div>
@@ -482,6 +494,33 @@ export default function RecettesPage() {
                         <ChevronDown className="w-4 h-4 ml-2" />
                       )}
                     </Button>
+
+                    {/* Favorites Filter Toggle */}
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        playClickSound();
+                        setFilters(prev => ({
+                          ...prev,
+                          favorites: !prev.favorites
+                        }));
+                      }}
+                      className={`justify-between transition-all px-3 py-2 h-auto ${
+                        filters.favorites
+                          ? "bg-red-50 border-red-200 text-red-700"
+                          : "border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      <span className="flex items-center">
+                        <Heart className="w-4 h-4 mr-2" />
+                        Favoris
+                        {filters.favorites && (
+                          <span className="ml-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            ✓
+                          </span>
+                        )}
+                      </span>
+                    </Button>
                   </div>
 
                   {/* Difficulty Options */}
@@ -550,7 +589,8 @@ export default function RecettesPage() {
 
                 {/* Clear Filters Button */}
                 {(filters.difficulty.length > 0 ||
-                  filters.category.length > 0) && (
+                  filters.category.length > 0 ||
+                  filters.favorites) && (
                   <Button
                     variant="ghost"
                     size="sm"

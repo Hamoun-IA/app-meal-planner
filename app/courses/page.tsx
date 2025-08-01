@@ -368,23 +368,29 @@ export default function CoursesPage() {
                         onCheckedChange={() => handleToggleItem(item.id)}
                         className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                       />
-                      <div className="flex-1">
-                        <span
-                          className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
-                        >
-                          {item.name}
-                        </span>
-                        {item.quantity && (
-                          <span className="text-sm text-pink-600 ml-2">
-                            {item.quantity}
-                          </span>
-                        )}
-                        {item.source && (
-                          <div className="text-xs text-gray-400 mt-1">
-                            {item.source}
-                          </div>
-                        )}
-                      </div>
+                                             <div className="flex-1">
+                         <div className="flex items-center flex-wrap gap-1">
+                           <span
+                             className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
+                           >
+                             {item.name}
+                           </span>
+                           {item.quantity && (
+                             <span className="text-sm text-pink-600 font-medium">
+                               {item.quantity}
+                             </span>
+                           )}
+                         </div>
+                         {item.source && (
+                           <div className="text-xs text-gray-400 mt-1">
+                             {item.source.split(', ').map((source, index) => (
+                               <span key={index} className="inline-block bg-gray-100 rounded px-1 mr-1 mb-1">
+                                 {source}
+                               </span>
+                             ))}
+                           </div>
+                         )}
+                       </div>
                       <Button
                         variant="ghost"
                         size="sm"

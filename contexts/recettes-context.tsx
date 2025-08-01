@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  type ReactNode,
-} from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 export interface Recette {
   id: number;
@@ -44,112 +38,136 @@ interface RecettesContextType {
   isLoading: boolean;
 }
 
-const RecettesContext = createContext<RecettesContextType | undefined>(
-  undefined
-);
+const RecettesContext = createContext<RecettesContextType | undefined>(undefined);
+
+// Fonction utilitaire pour sauvegarder en localStorage avec gestion d'erreur
+const saveToLocalStorage = (key: string, data: any): boolean => {
+  try {
+    // Vérifier la taille des données avant sauvegarde
+    const dataSize = new Blob([JSON.stringify(data)]).size;
+    const maxSize = 4.5 * 1024 * 1024; // 4.5MB pour être sûr
+    
+    if (dataSize > maxSize) {
+      console.warn(`Données trop volumineuses (${(dataSize / 1024 / 1024).toFixed(2)}MB) pour localStorage`);
+      
+      // Si les données sont trop volumineuses, essayer de nettoyer les images
+      const cleanedData = data.map((recette: Recette) => ({
+        ...recette,
+        image: recette.image ? undefined : undefined // Supprimer les images pour économiser l'espace
+      }));
+      
+      const cleanedSize = new Blob([JSON.stringify(cleanedData)]).size;
+      if (cleanedSize <= maxSize) {
+        localStorage.setItem(key, JSON.stringify(cleanedData));
+        console.log("Images supprimées pour économiser l'espace localStorage");
+        return true;
+      } else {
+        console.error("Impossible de sauvegarder même sans images");
+        return false;
+      }
+    }
+    
+    localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde dans localStorage:", error);
+    
+    // Si c'est une erreur de quota, essayer de nettoyer le localStorage
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      try {
+        // Supprimer les anciennes données pour libérer de l'espace
+        localStorage.removeItem(key);
+        localStorage.setItem(key, JSON.stringify(data));
+        console.log("Espace libéré et données sauvegardées");
+        return true;
+      } catch (cleanupError) {
+        console.error("Impossible de libérer l'espace localStorage:", cleanupError);
+        return false;
+      }
+    }
+    
+    return false;
+  }
+};
+
+// Fonction utilitaire pour charger depuis localStorage avec gestion d'erreur
+const loadFromLocalStorage = (key: string): any | null => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error("Erreur lors du chargement depuis localStorage:", error);
+    return null;
+  }
+};
 
 const defaultRecettes: Recette[] = [
   {
     id: 1,
     title: "Cookies aux pépites de chocolat",
-    description:
-      "Des cookies moelleux et croustillants avec de délicieuses pépites de chocolat. La recette parfaite pour un goûter gourmand !",
+    description: "Délicieux cookies moelleux avec des pépites de chocolat noir",
     category: "Dessert",
     difficulty: "Facile",
     prepTime: "15 min",
-    cookTime: "10 min",
-    servings: 4,
-    image: "/placeholder.svg?height=400&width=600",
-    liked: true,
-    createdAt: "2024-01-10T10:00:00Z",
-    updatedAt: "2024-01-10T10:00:00Z",
+    cookTime: "12 min",
+    servings: 24,
+    image: "",
     ingredients: [
-      { name: "Farine", quantity: "200g" },
-      { name: "Beurre mou", quantity: "100g" },
-      { name: "Sucre brun", quantity: "80g" },
-      { name: "Sucre blanc", quantity: "50g" },
-      { name: "Œuf", quantity: "1" },
-      { name: "Pépites de chocolat", quantity: "150g" },
-      { name: "Levure chimique", quantity: "1 c.à.c" },
-      { name: "Sel", quantity: "1 pincée" },
-      { name: "Extrait de vanille", quantity: "1 c.à.c" },
+      { name: "farine", quantity: "250g" },
+      { name: "beurre", quantity: "125g" },
+      { name: "sucre", quantity: "100g" },
+      { name: "œufs", quantity: "1" },
+      { name: "pépites de chocolat", quantity: "150g" },
+      { name: "vanille", quantity: "1 c.à.c" },
     ],
     instructions: [
-      {
-        text: "Préchauffer le four à 180°C. Dans un saladier, mélanger le beurre mou avec les deux sucres jusqu'à obtenir une texture crémeuse.",
-      },
-      { text: "Ajouter l'œuf et l'extrait de vanille, bien mélanger." },
-      {
-        text: "Dans un autre bol, mélanger la farine, la levure et le sel. Incorporer ce mélange sec à la préparation humide.",
-      },
-      { text: "Ajouter les pépites de chocolat et mélanger délicatement." },
-      {
-        text: "Former des boules de pâte et les disposer sur une plaque recouverte de papier sulfurisé, en laissant de l'espace entre chaque cookie.",
-      },
-      {
-        text: "Enfourner pendant 10-12 minutes jusqu'à ce que les bords soient dorés. Laisser refroidir sur la plaque 5 minutes avant de transférer sur une grille.",
-      },
+      { text: "Préchauffer le four à 180°C" },
+      { text: "Mélanger le beurre ramolli avec le sucre" },
+      { text: "Ajouter l'œuf et la vanille" },
+      { text: "Incorporer la farine et les pépites" },
+      { text: "Former des boules et les déposer sur une plaque" },
+      { text: "Cuire 12 minutes" },
     ],
     tips: [
-      "Pour des cookies plus moelleux, ne pas trop les cuire",
-      "Tu peux remplacer les pépites par des chunks de chocolat",
-      "La pâte peut être préparée à l'avance et conservée au frigo",
+      "Laisser reposer la pâte 30 min au frigo pour plus de moelleux",
+      "Ne pas trop cuire pour garder le moelleux",
     ],
-    nutrition: {
-      calories: "280 kcal",
-      protein: "4g",
-      carbs: "35g",
-      fat: "14g",
-    },
+    liked: true,
+    createdAt: "2024-01-15T10:00:00.000Z",
+    updatedAt: "2024-01-15T10:00:00.000Z",
   },
   {
     id: 2,
-    title: "Salade de quinoa aux légumes",
-    description:
-      "Une salade fraîche et nutritive, parfaite pour un déjeuner léger et équilibré.",
+    title: "Pâtes à la carbonara",
+    description: "Classique italien avec des œufs, du parmesan et du lard",
     category: "Plat principal",
-    difficulty: "Facile",
+    difficulty: "Moyen",
     prepTime: "10 min",
     cookTime: "15 min",
-    servings: 2,
-    image: "/placeholder.svg?height=400&width=600",
-    liked: false,
-    createdAt: "2024-01-12T14:30:00Z",
-    updatedAt: "2024-01-12T14:30:00Z",
+    servings: 4,
+    image: "",
     ingredients: [
-      { name: "Quinoa", quantity: "150g" },
-      { name: "Tomates cerises", quantity: "200g" },
-      { name: "Concombre", quantity: "1" },
-      { name: "Avocat", quantity: "1" },
-      { name: "Feta", quantity: "100g" },
-      { name: "Huile d'olive", quantity: "3 c.à.s" },
-      { name: "Citron", quantity: "1" },
-      { name: "Menthe fraîche", quantity: "quelques feuilles" },
+      { name: "pâtes", quantity: "400g" },
+      { name: "lardons", quantity: "200g" },
+      { name: "œufs", quantity: "4" },
+      { name: "parmesan", quantity: "100g" },
+      { name: "poivre noir", quantity: "selon goût" },
     ],
     instructions: [
-      {
-        text: "Rincer le quinoa et le cuire dans de l'eau bouillante salée pendant 15 minutes.",
-      },
-      {
-        text: "Pendant ce temps, couper les tomates cerises en deux, le concombre en dés et l'avocat en lamelles.",
-      },
-      { text: "Égoutter le quinoa et le laisser refroidir." },
-      { text: "Mélanger le quinoa avec les légumes et la feta émiettée." },
-      {
-        text: "Préparer la vinaigrette avec l'huile d'olive, le jus de citron, sel et poivre.",
-      },
-      { text: "Assaisonner la salade et garnir de menthe fraîche." },
+      { text: "Faire cuire les pâtes dans l'eau salée" },
+      { text: "Faire revenir les lardons à la poêle" },
+      { text: "Battre les œufs avec le parmesan râpé" },
+      { text: "Égoutter les pâtes en gardant un peu d'eau" },
+      { text: "Mélanger les pâtes avec les lardons" },
+      { text: "Ajouter le mélange œufs-parmesan hors du feu" },
     ],
     tips: [
-      "Le quinoa peut être cuit à l'avance",
-      "Ajouter l'avocat au dernier moment pour éviter qu'il noircisse",
+      "Ne pas cuire les œufs, ils doivent juste épaissir",
+      "Garder un peu d'eau de cuisson pour lier la sauce",
     ],
-    nutrition: {
-      calories: "320 kcal",
-      protein: "12g",
-      carbs: "28g",
-      fat: "18g",
-    },
+    liked: false,
+    createdAt: "2024-01-16T12:00:00.000Z",
+    updatedAt: "2024-01-16T12:00:00.000Z",
   },
 ];
 
@@ -160,17 +178,13 @@ export function RecettesProvider({ children }: { children: ReactNode }) {
   // Charger les recettes depuis localStorage au démarrage
   useEffect(() => {
     try {
-      const savedRecettes = localStorage.getItem("babounette-recettes");
+      const savedRecettes = loadFromLocalStorage("babounette-recettes");
       if (savedRecettes) {
-        const parsed = JSON.parse(savedRecettes);
-        setRecettes(parsed);
+        setRecettes(savedRecettes);
       } else {
         // Première utilisation, utiliser les recettes par défaut
         setRecettes(defaultRecettes);
-        localStorage.setItem(
-          "babounette-recettes",
-          JSON.stringify(defaultRecettes)
-        );
+        saveToLocalStorage("babounette-recettes", defaultRecettes);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des recettes:", error);
@@ -183,7 +197,12 @@ export function RecettesProvider({ children }: { children: ReactNode }) {
   // Sauvegarder les recettes dans localStorage quand elles changent
   useEffect(() => {
     if (!isLoading && recettes.length > 0) {
-      localStorage.setItem("babounette-recettes", JSON.stringify(recettes));
+      const success = saveToLocalStorage("babounette-recettes", recettes);
+      if (!success) {
+        console.warn("Impossible de sauvegarder les recettes dans localStorage");
+        // Optionnel : afficher une notification à l'utilisateur
+        // alert("Attention : Impossible de sauvegarder les données localement. Les images peuvent être supprimées pour économiser l'espace.");
+      }
     }
   }, [recettes, isLoading]);
 

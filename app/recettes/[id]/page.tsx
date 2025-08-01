@@ -136,8 +136,8 @@ export default function RecettePage({ params }: RecettePageProps) {
       
       toast({
         title: "Ingrédients ajoutés ! 🛒",
-        description: `${ingredients.length} ingrédient(s) ajouté(s) à ta liste de courses`,
-        duration: 3000,
+        description: `${ingredients.length} ingrédient(s) ajouté(s) à ta liste de courses (fusion automatique des doublons)`,
+        duration: 4000,
       });
     } else {
       // Ajouter seulement les ingrédients cochés
@@ -153,8 +153,8 @@ export default function RecettePage({ params }: RecettePageProps) {
       
       toast({
         title: "Ingrédients sélectionnés ajoutés ! 🛒",
-        description: `${checkedIngredients.length} ingrédient(s) ajouté(s) à ta liste de courses`,
-        duration: 3000,
+        description: `${checkedIngredients.length} ingrédient(s) ajouté(s) à ta liste de courses (fusion automatique des doublons)`,
+        duration: 4000,
       });
     }
   };

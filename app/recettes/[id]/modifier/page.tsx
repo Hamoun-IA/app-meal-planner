@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { IngredientAutocomplete } from "@/components/ui/ingredient-autocomplete";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -14,8 +15,10 @@ import {
   Minus,
   X,
   Save,
+  Upload,
+  Trash2,
 } from "lucide-react";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 import { useRecettes } from "@/contexts/recettes-context";
 import { useRouter } from "next/navigation";
@@ -47,6 +50,12 @@ export default function ModifierRecettePage({
     tips: [""],
     liked: false,
   });
+  
+  // États pour la gestion des images
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Unwrap params avec React.use()
   const { id } = use(params);
@@ -69,6 +78,11 @@ export default function ModifierRecettePage({
         tips: originalRecette.tips,
         liked: originalRecette.liked,
       });
+      
+      // Charger l'aperçu de l'image existante
+      if (originalRecette.image) {
+        setImagePreview(originalRecette.image);
+      }
     }
   }, [originalRecette]);
 
@@ -80,6 +94,113 @@ export default function ModifierRecettePage({
   const handleInputChange = (field: string, value: string | number) => {
     playClickSound();
     setRecette((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Fonction pour compresser une image
+  const compressImage = (file: File, maxWidth: number = 800, quality: number = 0.7): Promise<string> => {
+    return new Promise((resolve) => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d')!;
+      const img = new Image();
+      
+      img.onload = () => {
+        // Calculer les nouvelles dimensions
+        const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+        const newWidth = img.width * ratio;
+        const newHeight = img.height * ratio;
+        
+        // Redimensionner le canvas
+        canvas.width = newWidth;
+        canvas.height = newHeight;
+        
+        // Dessiner l'image redimensionnée
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+        
+        // Convertir en base64 avec compression
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Fonction pour gérer la sélection d'image
+  const handleImageSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validation du type de fichier
+      if (!file.type.startsWith('image/')) {
+        alert('Veuillez sélectionner un fichier image valide (JPG, PNG, etc.)');
+        return;
+      }
+
+      // Validation de la taille (5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La taille du fichier ne doit pas dépasser 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      
+      try {
+        // Compresser l'image avant l'aperçu
+        const compressedImage = await compressImage(file);
+        setImagePreview(compressedImage);
+        playClickSound();
+      } catch (error) {
+        console.error('Erreur lors de la compression:', error);
+        // Fallback : utiliser l'image originale
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setImagePreview(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+        playClickSound();
+      }
+    }
+  };
+
+  // Fonction pour déclencher la sélection de fichier
+  const handleChooseImage = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Fonction pour supprimer l'image
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImagePreview("");
+    setRecette(prev => ({ ...prev, image: "" }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    playClickSound();
+  };
+
+  // Fonction pour simuler l'upload d'image
+  const handleImageUpload = async () => {
+    if (!selectedImage) return;
+
+    setIsUploading(true);
+    
+    try {
+      // Simulation d'un upload (dans un vrai projet, vous utiliseriez une API)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Convertir l'image en base64 pour le stockage local
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const base64Image = e.target?.result as string;
+        setRecette(prev => ({ ...prev, image: base64Image }));
+        setIsUploading(false);
+      };
+      reader.readAsDataURL(selectedImage);
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'upload:', error);
+      alert('Erreur lors de l\'upload de l\'image');
+      setIsUploading(false);
+    }
   };
 
   const addIngredient = () => {
@@ -344,18 +465,76 @@ export default function ModifierRecettePage({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Photo de la recette
                 </label>
+                
+                {/* Input file caché */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+                
                 <div className="border-2 border-dashed border-pink-200 rounded-lg p-8 text-center hover:border-pink-300 transition-colors">
-                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">
-                    Clique pour modifier la photo
-                  </p>
-                  <p className="text-sm text-gray-500">JPG, PNG jusqu'à 5MB</p>
-                  <Button
-                    variant="outline"
-                    className="mt-4 border-pink-200 hover:bg-pink-50 bg-transparent"
-                  >
-                    Choisir une photo
-                  </Button>
+                  {imagePreview ? (
+                    <div className="space-y-4">
+                      <div className="relative inline-block">
+                        <img
+                          src={imagePreview}
+                          alt="Aperçu de la recette"
+                          className="w-48 h-48 object-cover rounded-lg mx-auto"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveImage}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white hover:bg-red-600 rounded-full w-8 h-8 p-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          {selectedImage ? `Fichier sélectionné: ${selectedImage.name}` : "Image chargée"}
+                        </p>
+                        {selectedImage && (
+                          <Button
+                            onClick={handleImageUpload}
+                            disabled={isUploading}
+                            className="bg-gradient-to-r from-pink-500 to-rose-500"
+                          >
+                            {isUploading ? (
+                              <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Upload en cours...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="w-4 h-4 mr-2" />
+                                Confirmer l'upload
+                              </>
+                            )}
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600 mb-2">
+                        Clique pour modifier la photo
+                      </p>
+                      <p className="text-sm text-gray-500 mb-4">JPG, PNG jusqu'à 5MB</p>
+                      <Button
+                        variant="outline"
+                        onClick={handleChooseImage}
+                        className="border-pink-200 hover:bg-pink-50 bg-transparent"
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Choisir une photo
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -522,11 +701,9 @@ export default function ModifierRecettePage({
                     className="flex items-center space-x-3 p-4 bg-pink-50 rounded-lg"
                   >
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
+                      <IngredientAutocomplete
                         value={ingredient.name}
-                        onChange={(e) =>
-                          updateIngredient(index, "name", e.target.value)
-                        }
+                        onChange={(value) => updateIngredient(index, "name", value)}
                         placeholder="Nom de l'ingrédient"
                         className="border-pink-200 focus:border-pink-400"
                       />
