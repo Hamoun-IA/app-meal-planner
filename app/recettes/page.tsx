@@ -15,6 +15,8 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Filter,
+  X,
 } from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
@@ -28,6 +30,7 @@ export default function RecettesPage() {
   const [filters, setFilters] = useState({
     difficulty: [] as string[],
   })
+  const [showMobileFilters, setShowMobileFilters] = useState(false)
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -194,99 +197,146 @@ export default function RecettesPage() {
           </div>
         </div>
 
-        {/* Sort Controls */}
+        {/* Mobile Filter/Sort Button */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-gray-700 flex items-center">
-              <ArrowUpDown className="w-4 h-4 mr-2" />
-              Trier par :
-            </h3>
-            <div className="flex space-x-2">
+            <div className="flex items-center space-x-4">
               <Button
                 variant="outline"
-                size="sm"
-                onClick={() => handleSort("alphabetical")}
-                className={`transition-all ${
-                  sortBy === "alphabetical"
-                    ? "bg-pink-100 border-pink-300 text-pink-700"
-                    : "border-gray-200 hover:bg-pink-50"
-                }`}
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="flex items-center space-x-2 border-pink-200 hover:bg-pink-50"
               >
-                <span className="mr-2">A-Z</span>
-                {sortBy === "alphabetical" &&
-                  (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                <Filter className="w-4 h-4" />
+                <span>Trier & Filtrer</span>
+                {(sortBy || filters.difficulty.length > 0) && (
+                  <span className="bg-pink-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                    {(sortBy ? 1 : 0) + filters.difficulty.length}
+                  </span>
+                )}
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleSort("time")}
-                className={`transition-all ${
-                  sortBy === "time" ? "bg-pink-100 border-pink-300 text-pink-700" : "border-gray-200 hover:bg-pink-50"
-                }`}
-              >
-                <Clock className="w-3 h-3 mr-2" />
-                <span className="mr-2">Temps</span>
-                {sortBy === "time" &&
-                  (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
-              </Button>
-              {sortBy && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSortBy(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  Réinitialiser
-                </Button>
-              )}
+
+              {/* Quick indicators */}
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                {sortBy && (
+                  <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs flex items-center">
+                    {sortBy === "alphabetical" ? "A-Z" : "Temps"}
+                    {sortOrder === "asc" ? (
+                      <ArrowUp className="w-3 h-3 ml-1" />
+                    ) : (
+                      <ArrowDown className="w-3 h-3 ml-1" />
+                    )}
+                  </span>
+                )}
+                {filters.difficulty.length > 0 && (
+                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs">
+                    {filters.difficulty.length} difficulté{filters.difficulty.length > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Filter Controls */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-700 flex items-center">
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"
-                />
-              </svg>
-              Filtrer par :
-            </h3>
-            {filters.difficulty.length > 0 && (
-              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500 hover:text-gray-700">
-                Effacer filtres
-              </Button>
-            )}
-          </div>
-
-          <div className="space-y-3">
-            <div>
-              <h4 className="text-xs font-medium text-gray-600 mb-2">Niveau de difficulté</h4>
-              <div className="flex flex-wrap gap-2">
-                {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
+          {/* Expandable Filter/Sort Panel */}
+          {showMobileFilters && (
+            <div className="mt-4 pt-4 border-t border-gray-100 space-y-4 animate-fade-in-up">
+              {/* Sort Section */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <ArrowUpDown className="w-4 h-4 mr-2" />
+                  Trier par
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
                   <Button
-                    key={difficulty}
                     variant="outline"
                     size="sm"
-                    onClick={() => handleFilterChange("difficulty", difficulty)}
+                    onClick={() => handleSort("alphabetical")}
                     className={`transition-all ${
-                      filters.difficulty.includes(difficulty)
+                      sortBy === "alphabetical"
                         ? "bg-pink-100 border-pink-300 text-pink-700"
                         : "border-gray-200 hover:bg-pink-50"
                     }`}
                   >
-                    {difficulty}
-                    {filters.difficulty.includes(difficulty) && <span className="ml-1 text-pink-500">✓</span>}
+                    <span className="mr-2">A-Z</span>
+                    {sortBy === "alphabetical" &&
+                      (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
                   </Button>
-                ))}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSort("time")}
+                    className={`transition-all ${
+                      sortBy === "time"
+                        ? "bg-pink-100 border-pink-300 text-pink-700"
+                        : "border-gray-200 hover:bg-pink-50"
+                    }`}
+                  >
+                    <Clock className="w-3 h-3 mr-2" />
+                    <span className="mr-1">Temps</span>
+                    {sortBy === "time" &&
+                      (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                  </Button>
+                </div>
+                {sortBy && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSortBy(null)}
+                    className="text-gray-500 hover:text-gray-700 mt-2 w-full"
+                  >
+                    Réinitialiser le tri
+                  </Button>
+                )}
+              </div>
+
+              {/* Filter Section */}
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filtrer par difficulté
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
+                    <Button
+                      key={difficulty}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleFilterChange("difficulty", difficulty)}
+                      className={`transition-all ${
+                        filters.difficulty.includes(difficulty)
+                          ? "bg-purple-100 border-purple-300 text-purple-700"
+                          : "border-gray-200 hover:bg-purple-50"
+                      }`}
+                    >
+                      {difficulty}
+                      {filters.difficulty.includes(difficulty) && <span className="ml-1 text-purple-500">✓</span>}
+                    </Button>
+                  ))}
+                </div>
+                {filters.difficulty.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearFilters}
+                    className="text-gray-500 hover:text-gray-700 mt-2 w-full"
+                  >
+                    Effacer les filtres
+                  </Button>
+                )}
+              </div>
+
+              {/* Close button */}
+              <div className="pt-2">
+                <Button
+                  variant="ghost"
+                  onClick={() => setShowMobileFilters(false)}
+                  className="w-full text-gray-500 hover:text-gray-700"
+                >
+                  <X className="w-4 h-4 mr-2" />
+                  Fermer
+                </Button>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Recipe Display */}
