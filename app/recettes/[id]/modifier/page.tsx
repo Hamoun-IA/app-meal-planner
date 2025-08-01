@@ -5,14 +5,20 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
 import { ArrowLeft, ChefHat, Clock, Users, Camera, Plus, Minus, X, Save } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 import { useRecettes } from "@/contexts/recettes-context"
 import { useRouter } from "next/navigation"
 
-export default function AjouterRecettePage() {
+interface ModifierRecettePageProps {
+  params: {
+    id: string
+  }
+}
+
+export default function ModifierRecettePage({ params }: ModifierRecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { addRecette } = useRecettes()
+  const { getRecetteById, updateRecette } = useRecettes()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [recette, setRecette] = useState({
@@ -29,6 +35,28 @@ export default function AjouterRecettePage() {
     tips: [""],
     liked: false,
   })
+
+  const originalRecette = getRecetteById(Number.parseInt(params.id))
+
+  // Charger les données de la recette existante
+  useEffect(() => {
+    if (originalRecette) {
+      setRecette({
+        title: originalRecette.title,
+        description: originalRecette.description,
+        category: originalRecette.category,
+        difficulty: originalRecette.difficulty,
+        prepTime: originalRecette.prepTime,
+        cookTime: originalRecette.cookTime,
+        servings: originalRecette.servings,
+        image: originalRecette.image || "",
+        ingredients: originalRecette.ingredients,
+        instructions: originalRecette.instructions,
+        tips: originalRecette.tips,
+        liked: originalRecette.liked,
+      })
+    }
+  }, [originalRecette])
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -130,6 +158,11 @@ export default function AjouterRecettePage() {
   const handleSave = () => {
     playClickSound()
 
+    if (!originalRecette) {
+      alert("Recette non trouvée !")
+      return
+    }
+
     // Validation basique
     if (!recette.title.trim()) {
       alert("Le titre est obligatoire !")
@@ -148,17 +181,39 @@ export default function AjouterRecettePage() {
 
     // Nettoyer les données
     const cleanedRecette = {
-      ...recette,
+      title: recette.title,
+      description: recette.description,
+      category: recette.category,
+      difficulty: recette.difficulty,
+      prepTime: recette.prepTime,
+      cookTime: recette.cookTime,
+      servings: recette.servings,
+      image: recette.image,
       ingredients: recette.ingredients.filter((ing) => ing.name.trim() && ing.quantity.trim()),
       instructions: recette.instructions.filter((inst) => inst.text.trim()),
       tips: recette.tips.filter((tip) => tip.trim()),
+      liked: recette.liked,
     }
 
-    // Ajouter la recette
-    addRecette(cleanedRecette)
+    // Mettre à jour la recette
+    updateRecette(originalRecette.id, cleanedRecette)
 
-    // Rediriger vers la liste des recettes
-    router.push("/recettes")
+    // Rediriger vers la page de détail
+    router.push(`/recettes/${originalRecette.id}`)
+  }
+
+  if (!originalRecette) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <ChefHat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600 text-lg">Recette non trouvée 🥺</p>
+          <Button asChild className="mt-4 bg-gradient-to-r from-pink-500 to-rose-500">
+            <Link href="/recettes">Retour aux recettes</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   const categories = ["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"]
@@ -188,13 +243,13 @@ export default function AjouterRecettePage() {
               className="text-white hover:bg-white/20 active:scale-95 transition-transform duration-100"
               onMouseDown={handleBackClick}
             >
-              <Link href="/recettes">
+              <Link href={`/recettes/${originalRecette.id}`}>
                 <ArrowLeft className="w-5 h-5" />
               </Link>
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">Ajouter une recette</h1>
+              <h1 className="text-white font-semibold text-xl">Modifier la recette</h1>
             </div>
           </div>
 
@@ -254,7 +309,7 @@ export default function AjouterRecettePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Photo de la recette</label>
                 <div className="border-2 border-dashed border-pink-200 rounded-lg p-8 text-center hover:border-pink-300 transition-colors">
                   <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Clique pour ajouter une photo</p>
+                  <p className="text-gray-600 mb-2">Clique pour modifier la photo</p>
                   <p className="text-sm text-gray-500">JPG, PNG jusqu'à 5MB</p>
                   <Button variant="outline" className="mt-4 border-pink-200 hover:bg-pink-50 bg-transparent">
                     Choisir une photo
@@ -572,10 +627,10 @@ export default function AjouterRecettePage() {
             ) : (
               <Button
                 onClick={handleSave}
-                className="bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
               >
                 <Save className="w-4 h-4 mr-2" />
-                Publier la recette
+                Sauvegarder les modifications
               </Button>
             )}
           </div>

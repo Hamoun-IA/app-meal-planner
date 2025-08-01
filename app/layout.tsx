@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { SettingsProvider } from "@/contexts/settings-context"
+import { RecettesProvider } from "@/contexts/recettes-context"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -149,7 +150,9 @@ export default function RootLayout({
         <link rel="dns-prefetch" href="//fonts.gstatic.com" />
       </head>
       <body className={inter.className}>
-        <SettingsProvider>{children}</SettingsProvider>
+        <SettingsProvider>
+          <RecettesProvider>{children}</RecettesProvider>
+        </SettingsProvider>
       </body>
     </html>
   )

@@ -2,86 +2,25 @@
 
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { ArrowLeft, Clock, Users, Heart, Share2, ChefHat, CheckCircle2, Plus, Minus, Timer, Star } from "lucide-react"
+import {
+  ArrowLeft,
+  Clock,
+  Users,
+  Heart,
+  Share2,
+  ChefHat,
+  CheckCircle2,
+  Plus,
+  Minus,
+  Timer,
+  Star,
+  Edit2,
+  Trash2,
+} from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
-
-// Données de démonstration - en réalité, cela viendrait d'une API ou base de données
-const getRecetteById = (id: string) => {
-  const recettes = {
-    "1": {
-      id: 1,
-      title: "Cookies aux pépites de chocolat",
-      image: "/placeholder.svg?height=400&width=600",
-      time: "25 min",
-      prepTime: "15 min",
-      cookTime: "10 min",
-      servings: 4,
-      difficulty: "Facile",
-      liked: true,
-      category: "Dessert",
-      rating: 4.8,
-      description:
-        "Des cookies moelleux et croustillants avec de délicieuses pépites de chocolat. La recette parfaite pour un goûter gourmand !",
-      ingredients: [
-        { name: "Farine", quantity: "200g", checked: false },
-        { name: "Beurre mou", quantity: "100g", checked: false },
-        { name: "Sucre brun", quantity: "80g", checked: false },
-        { name: "Sucre blanc", quantity: "50g", checked: false },
-        { name: "Œuf", quantity: "1", checked: false },
-        { name: "Pépites de chocolat", quantity: "150g", checked: false },
-        { name: "Levure chimique", quantity: "1 c.à.c", checked: false },
-        { name: "Sel", quantity: "1 pincée", checked: false },
-        { name: "Extrait de vanille", quantity: "1 c.à.c", checked: false },
-      ],
-      instructions: [
-        {
-          step: 1,
-          text: "Préchauffer le four à 180°C. Dans un saladier, mélanger le beurre mou avec les deux sucres jusqu'à obtenir une texture crémeuse.",
-          completed: false,
-        },
-        {
-          step: 2,
-          text: "Ajouter l'œuf et l'extrait de vanille, bien mélanger.",
-          completed: false,
-        },
-        {
-          step: 3,
-          text: "Dans un autre bol, mélanger la farine, la levure et le sel. Incorporer ce mélange sec à la préparation humide.",
-          completed: false,
-        },
-        {
-          step: 4,
-          text: "Ajouter les pépites de chocolat et mélanger délicatement.",
-          completed: false,
-        },
-        {
-          step: 5,
-          text: "Former des boules de pâte et les disposer sur une plaque recouverte de papier sulfurisé, en laissant de l'espace entre chaque cookie.",
-          completed: false,
-        },
-        {
-          step: 6,
-          text: "Enfourner pendant 10-12 minutes jusqu'à ce que les bords soient dorés. Laisser refroidir sur la plaque 5 minutes avant de transférer sur une grille.",
-          completed: false,
-        },
-      ],
-      tips: [
-        "Pour des cookies plus moelleux, ne pas trop les cuire",
-        "Tu peux remplacer les pépites par des chunks de chocolat",
-        "La pâte peut être préparée à l'avance et conservée au frigo",
-      ],
-      nutrition: {
-        calories: "280 kcal",
-        protein: "4g",
-        carbs: "35g",
-        fat: "14g",
-      },
-    },
-  }
-
-  return recettes[id as keyof typeof recettes] || null
-}
+import { useRecettes } from "@/contexts/recettes-context"
+import { useRouter } from "next/navigation"
 
 interface RecettePageProps {
   params: {
@@ -91,20 +30,21 @@ interface RecettePageProps {
 
 export default function RecettePage({ params }: RecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
+  const { getRecetteById, deleteRecette, toggleLike } = useRecettes()
+  const router = useRouter()
   const [servings, setServings] = useState(4)
   const [ingredients, setIngredients] = useState<Array<{ name: string; quantity: string; checked: boolean }>>([])
-  const [instructions, setInstructions] = useState<Array<{ step: number; text: string; completed: boolean }>>([])
-  const [isLiked, setIsLiked] = useState(false)
+  const [instructions, setInstructions] = useState<Array<{ text: string; completed: boolean }>>([])
   const [activeTab, setActiveTab] = useState<"ingredients" | "instructions" | "tips">("ingredients")
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const recette = getRecetteById(params.id)
+  const recette = getRecetteById(Number.parseInt(params.id))
 
   // Initialiser les états avec les données de la recette
   useState(() => {
     if (recette) {
-      setIngredients(recette.ingredients)
-      setInstructions(recette.instructions)
-      setIsLiked(recette.liked)
+      setIngredients(recette.ingredients.map((ing) => ({ ...ing, checked: false })))
+      setInstructions(recette.instructions.map((inst, index) => ({ text: inst.text, completed: false })))
       setServings(recette.servings)
     }
   })
@@ -115,8 +55,18 @@ export default function RecettePage({ params }: RecettePageProps) {
   }
 
   const handleLikeClick = () => {
-    playClickSound()
-    setIsLiked(!isLiked)
+    if (recette) {
+      playClickSound()
+      toggleLike(recette.id)
+    }
+  }
+
+  const handleDeleteRecette = () => {
+    if (recette) {
+      playClickSound()
+      deleteRecette(recette.id)
+      router.push("/recettes")
+    }
   }
 
   const handleIngredientCheck = (index: number) => {
@@ -155,6 +105,38 @@ export default function RecettePage({ params }: RecettePageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100">
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-fade-in-up">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Supprimer la recette ?</h3>
+              <p className="text-gray-600 mb-6">
+                Cette action est irréversible. Es-tu sûre de vouloir supprimer cette recette ?
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    playClickSound()
+                    setShowDeleteConfirm(false)
+                  }}
+                  className="flex-1 border-gray-200 hover:bg-gray-50"
+                >
+                  Annuler
+                </Button>
+                <Button onClick={handleDeleteRecette} className="flex-1 bg-red-500 hover:bg-red-600 text-white">
+                  Supprimer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-pink-400 to-rose-400 p-4 shadow-lg">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
@@ -172,13 +154,29 @@ export default function RecettePage({ params }: RecettePageProps) {
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">Recette Cookies aux pépites de chocolat    </h1>
+              <h1 className="text-white font-semibold text-xl">{recette.title}</h1>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
+            <Button asChild variant="ghost" size="sm" className="text-white hover:bg-white/20 p-2">
+              <Link href={`/recettes/${recette.id}/modifier`}>
+                <Edit2 className="w-5 h-5" />
+              </Link>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                playClickSound()
+                setShowDeleteConfirm(true)
+              }}
+              className="text-white hover:bg-white/20 p-2"
+            >
+              <Trash2 className="w-5 h-5" />
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleLikeClick} className="text-white hover:bg-white/20 p-2">
-              <Heart className={`w-5 h-5 ${isLiked ? "fill-current text-red-300" : ""}`} />
+              <Heart className={`w-5 h-5 ${recette.liked ? "fill-current text-red-300" : ""}`} />
             </Button>
             <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 p-2">
               <Share2 className="w-5 h-5" />
@@ -192,7 +190,7 @@ export default function RecettePage({ params }: RecettePageProps) {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6 animate-fade-in-up">
           <div className="relative">
             <img
-              src={recette.image || "/placeholder.svg"}
+              src={recette.image || "/placeholder.svg?height=400&width=600&query=recette"}
               alt={recette.title}
               className="w-full h-64 md:h-80 object-cover"
             />
@@ -201,10 +199,12 @@ export default function RecettePage({ params }: RecettePageProps) {
                 {recette.category}
               </span>
             </div>
-            <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 rounded-full px-2 py-1">
-              <Star className="w-4 h-4 text-yellow-500 fill-current" />
-              <span className="text-sm font-medium">{recette.rating}</span>
-            </div>
+            {recette.nutrition && (
+              <div className="absolute bottom-4 right-4 flex items-center space-x-1 bg-white/90 rounded-full px-2 py-1">
+                <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                <span className="text-sm font-medium">4.8</span>
+              </div>
+            )}
           </div>
 
           <div className="p-6">
@@ -216,7 +216,11 @@ export default function RecettePage({ params }: RecettePageProps) {
               <div className="text-center p-3 bg-pink-50 rounded-lg">
                 <Clock className="w-5 h-5 text-pink-500 mx-auto mb-1" />
                 <p className="text-sm text-gray-600">Total</p>
-                <p className="font-semibold text-gray-800">{recette.time}</p>
+                <p className="font-semibold text-gray-800">
+                  {Number.parseInt(recette.prepTime.replace(" min", "")) +
+                    Number.parseInt(recette.cookTime.replace(" min", ""))}{" "}
+                  min
+                </p>
               </div>
               <div className="text-center p-3 bg-rose-50 rounded-lg">
                 <Timer className="w-5 h-5 text-rose-500 mx-auto mb-1" />
@@ -254,27 +258,29 @@ export default function RecettePage({ params }: RecettePageProps) {
             </div>
 
             {/* Nutrition Info */}
-            <div className="bg-gradient-to-r from-pink-100 to-rose-100 rounded-lg p-4">
-              <h3 className="font-semibold text-gray-800 mb-2">Informations nutritionnelles (par portion)</h3>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div className="text-center">
-                  <p className="text-gray-600">Calories</p>
-                  <p className="font-semibold">{recette.nutrition.calories}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600">Protéines</p>
-                  <p className="font-semibold">{recette.nutrition.protein}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600">Glucides</p>
-                  <p className="font-semibold">{recette.nutrition.carbs}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-gray-600">Lipides</p>
-                  <p className="font-semibold">{recette.nutrition.fat}</p>
+            {recette.nutrition && (
+              <div className="bg-gradient-to-r from-pink-100 to-rose-100 rounded-lg p-4">
+                <h3 className="font-semibold text-gray-800 mb-2">Informations nutritionnelles (par portion)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="text-gray-600">Calories</p>
+                    <p className="font-semibold">{recette.nutrition.calories}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">Protéines</p>
+                    <p className="font-semibold">{recette.nutrition.protein}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">Glucides</p>
+                    <p className="font-semibold">{recette.nutrition.carbs}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">Lipides</p>
+                    <p className="font-semibold">{recette.nutrition.fat}</p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
@@ -376,7 +382,7 @@ export default function RecettePage({ params }: RecettePageProps) {
                         {instruction.completed ? (
                           <CheckCircle2 className="w-4 h-4 text-white" />
                         ) : (
-                          <span className="text-sm font-medium text-pink-600">{instruction.step}</span>
+                          <span className="text-sm font-medium text-pink-600">{index + 1}</span>
                         )}
                       </button>
                       <p

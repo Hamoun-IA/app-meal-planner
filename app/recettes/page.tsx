@@ -3,15 +3,36 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { ArrowLeft, ChefHat, Clock, Heart, Search, Users, Grid3X3, List, ArrowUpDown, ArrowUp, ArrowDown, Filter, X, ChevronDown, ChevronUp, Plus } from 'lucide-react'
+import {
+  ArrowLeft,
+  ChefHat,
+  Clock,
+  Heart,
+  Search,
+  Users,
+  Grid3X3,
+  List,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Plus,
+  Edit2,
+  Trash2,
+} from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { useRecettes } from "@/contexts/recettes-context"
 
 export default function RecettesPage() {
   const [searchTerm, setSearchTerm] = useState("")
-  const { playBackSound } = useAppSoundsSimple()
+  const { playBackSound, playClickSound } = useAppSoundsSimple()
+  const { recettes, deleteRecette, toggleLike, isLoading } = useRecettes()
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [sortBy, setSortBy] = useState<"alphabetical" | "time" | null>(null)
+  const [sortBy, setSortBy] = useState<"alphabetical" | "time" | "date" | null>(null)
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
   const [filters, setFilters] = useState({
     difficulty: [] as string[],
@@ -19,54 +40,23 @@ export default function RecettesPage() {
   })
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [expandedFilter, setExpandedFilter] = useState<"difficulty" | "category" | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
     playBackSound()
   }
 
-  const recettes = [
-    {
-      id: 1,
-      title: "Cookies aux pépites de chocolat",
-      image: "/placeholder.svg?height=200&width=300",
-      time: "25 min",
-      servings: 4,
-      difficulty: "Facile",
-      liked: true,
-      category: "Dessert",
-    },
-    {
-      id: 2,
-      title: "Salade de quinoa aux légumes",
-      image: "/placeholder.svg?height=200&width=300",
-      time: "15 min",
-      servings: 2,
-      difficulty: "Facile",
-      liked: false,
-      category: "Plat principal",
-    },
-    {
-      id: 3,
-      title: "Smoothie bowl aux fruits rouges",
-      image: "/placeholder.svg?height=200&width=300",
-      time: "10 min",
-      servings: 1,
-      difficulty: "Très facile",
-      liked: true,
-      category: "Petit-déjeuner",
-    },
-    {
-      id: 4,
-      title: "Pasta à la crème et champignons",
-      image: "/placeholder.svg?height=200&width=300",
-      time: "30 min",
-      servings: 3,
-      difficulty: "Moyen",
-      liked: false,
-      category: "Plat principal",
-    },
-  ]
+  const handleDeleteRecette = (id: number) => {
+    playClickSound()
+    deleteRecette(id)
+    setShowDeleteConfirm(null)
+  }
+
+  const handleLikeToggle = (id: number) => {
+    playClickSound()
+    toggleLike(id)
+  }
 
   const handleFilterChange = (filterType: string, value: string) => {
     setFilters((prev) => ({
@@ -103,15 +93,17 @@ export default function RecettesPage() {
     if (sortBy === "alphabetical") {
       comparison = a.title.localeCompare(b.title)
     } else if (sortBy === "time") {
-      const timeA = Number.parseInt(a.time.replace(" min", ""))
-      const timeB = Number.parseInt(b.time.replace(" min", ""))
+      const timeA = Number.parseInt(a.prepTime.replace(" min", "")) + Number.parseInt(a.cookTime.replace(" min", ""))
+      const timeB = Number.parseInt(b.prepTime.replace(" min", "")) + Number.parseInt(b.cookTime.replace(" min", ""))
       comparison = timeA - timeB
+    } else if (sortBy === "date") {
+      comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
     }
 
     return sortOrder === "asc" ? comparison : -comparison
   })
 
-  const handleSort = (criteria: "alphabetical" | "time") => {
+  const handleSort = (criteria: "alphabetical" | "time" | "date") => {
     if (sortBy === criteria) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc")
     } else {
@@ -124,11 +116,57 @@ export default function RecettesPage() {
     setExpandedFilter(expandedFilter === filterType ? null : filterType)
   }
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <ChefHat className="w-16 h-16 mx-auto text-pink-400 mb-4 animate-bounce" />
+          <p className="text-pink-600 text-lg">Chargement des recettes... ✨</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
       {/* Background particles */}
       <div className="absolute top-20 left-20 w-12 h-12 bg-pink-200/30 rounded-full blur-xl animate-float-slow"></div>
       <div className="absolute top-40 right-32 w-8 h-8 bg-rose-200/40 rounded-full blur-lg animate-float-medium delay-1000"></div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-fade-in-up">
+            <div className="text-center">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Trash2 className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">Supprimer la recette ?</h3>
+              <p className="text-gray-600 mb-6">
+                Cette action est irréversible. Es-tu sûre de vouloir supprimer cette recette ?
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    playClickSound()
+                    setShowDeleteConfirm(null)
+                  }}
+                  className="flex-1 border-gray-200 hover:bg-gray-50"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={() => handleDeleteRecette(showDeleteConfirm)}
+                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                >
+                  Supprimer
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header */}
       <div className="bg-gradient-to-r from-pink-400 to-rose-400 p-4 shadow-lg">
@@ -147,7 +185,12 @@ export default function RecettesPage() {
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">Mes Recettes</h1>
+              <div>
+                <h1 className="text-white font-semibold text-xl">Mes Recettes</h1>
+                <p className="text-white/80 text-sm">
+                  {recettes.length} recette{recettes.length > 1 ? "s" : ""}
+                </p>
+              </div>
             </div>
           </div>
 
@@ -169,7 +212,10 @@ export default function RecettesPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode("grid")}
+                onClick={() => {
+                  playClickSound()
+                  setViewMode("grid")
+                }}
                 className={`rounded-full p-2 transition-all ${
                   viewMode === "grid" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
                 }`}
@@ -179,7 +225,10 @@ export default function RecettesPage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setViewMode("list")}
+                onClick={() => {
+                  playClickSound()
+                  setViewMode("list")
+                }}
                 className={`rounded-full p-2 transition-all ${
                   viewMode === "list" ? "bg-white/30 text-white" : "text-white/70 hover:text-white hover:bg-white/20"
                 }`}
@@ -207,7 +256,10 @@ export default function RecettesPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowMobileFilters(!showMobileFilters)}
+              onClick={() => {
+                playClickSound()
+                setShowMobileFilters(!showMobileFilters)
+              }}
               className="flex-shrink-0 p-3 border-pink-200 hover:bg-pink-50 rounded-full relative"
             >
               <Filter className="w-4 h-4" />
@@ -224,7 +276,7 @@ export default function RecettesPage() {
             <div className="flex items-center space-x-2 text-sm text-gray-600 mt-3 pt-3 border-t border-gray-100">
               {sortBy && (
                 <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs flex items-center">
-                  {sortBy === "alphabetical" ? "A-Z" : "Temps"}
+                  {sortBy === "alphabetical" ? "A-Z" : sortBy === "time" ? "Temps" : "Date"}
                   {sortOrder === "asc" ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />}
                 </span>
               )}
@@ -280,12 +332,29 @@ export default function RecettesPage() {
                     {sortBy === "time" &&
                       (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
                   </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleSort("date")}
+                    className={`transition-all px-3 py-2 h-auto ${
+                      sortBy === "date"
+                        ? "bg-pink-100 border-pink-300 text-pink-700"
+                        : "border-gray-200 hover:bg-pink-50"
+                    }`}
+                  >
+                    <span className="mr-1">Date</span>
+                    {sortBy === "date" &&
+                      (sortOrder === "asc" ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)}
+                  </Button>
                 </div>
                 {sortBy && (
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setSortBy(null)}
+                    onClick={() => {
+                      playClickSound()
+                      setSortBy(null)
+                    }}
                     className="text-gray-500 hover:text-gray-700 mt-2 w-full"
                   >
                     Réinitialiser le tri
@@ -307,7 +376,10 @@ export default function RecettesPage() {
                     {/* Difficulty Filter Toggle */}
                     <Button
                       variant="outline"
-                      onClick={() => toggleFilterExpansion("difficulty")}
+                      onClick={() => {
+                        playClickSound()
+                        toggleFilterExpansion("difficulty")
+                      }}
                       className={`justify-between transition-all px-3 py-2 h-auto ${
                         filters.difficulty.length > 0
                           ? "bg-purple-50 border-purple-200 text-purple-700"
@@ -332,7 +404,10 @@ export default function RecettesPage() {
                     {/* Category Filter Toggle */}
                     <Button
                       variant="outline"
-                      onClick={() => toggleFilterExpansion("category")}
+                      onClick={() => {
+                        playClickSound()
+                        toggleFilterExpansion("category")
+                      }}
                       className={`justify-between transition-all px-3 py-2 h-auto ${
                         filters.category.length > 0
                           ? "bg-blue-50 border-blue-200 text-blue-700"
@@ -363,7 +438,10 @@ export default function RecettesPage() {
                           key={difficulty}
                           variant="outline"
                           size="sm"
-                          onClick={() => handleFilterChange("difficulty", difficulty)}
+                          onClick={() => {
+                            playClickSound()
+                            handleFilterChange("difficulty", difficulty)
+                          }}
                           className={`transition-all text-xs px-3 py-1 h-auto ${
                             filters.difficulty.includes(difficulty)
                               ? "bg-purple-100 border-purple-300 text-purple-700"
@@ -386,7 +464,10 @@ export default function RecettesPage() {
                             key={category}
                             variant="outline"
                             size="sm"
-                            onClick={() => handleFilterChange("category", category)}
+                            onClick={() => {
+                              playClickSound()
+                              handleFilterChange("category", category)
+                            }}
                             className={`transition-all text-xs px-3 py-1 h-auto ${
                               filters.category.includes(category)
                                 ? "bg-blue-100 border-blue-300 text-blue-700"
@@ -407,7 +488,10 @@ export default function RecettesPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={clearFilters}
+                    onClick={() => {
+                      playClickSound()
+                      clearFilters()
+                    }}
                     className="text-gray-500 hover:text-gray-700 w-full mt-3"
                   >
                     Effacer tous les filtres
@@ -419,7 +503,10 @@ export default function RecettesPage() {
               <div className="pt-2">
                 <Button
                   variant="ghost"
-                  onClick={() => setShowMobileFilters(false)}
+                  onClick={() => {
+                    playClickSound()
+                    setShowMobileFilters(false)
+                  }}
                   className="w-full text-gray-500 hover:text-gray-700"
                 >
                   <X className="w-4 h-4 mr-2" />
@@ -432,7 +519,7 @@ export default function RecettesPage() {
 
         {/* Recipe Display */}
         {viewMode === "grid" ? (
-          // Mode Grille (existant)
+          // Mode Grille
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredAndSortedRecettes.map((recette, index) => (
               <div
@@ -442,11 +529,14 @@ export default function RecettesPage() {
               >
                 <div className="relative">
                   <img
-                    src={recette.image || "/placeholder.svg"}
+                    src={recette.image || "/placeholder.svg?height=200&width=300&query=recette"}
                     alt={recette.title}
                     className="w-full h-48 object-cover"
                   />
-                  <button className="absolute top-3 right-3 p-2 bg-white/80 rounded-full hover:bg-white transition-colors">
+                  <button
+                    onClick={() => handleLikeToggle(recette.id)}
+                    className="absolute top-3 right-3 p-2 bg-white/80 rounded-full hover:bg-white transition-colors"
+                  >
                     <Heart className={`w-5 h-5 ${recette.liked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
                   </button>
                   <div className="absolute bottom-3 left-3">
@@ -454,14 +544,37 @@ export default function RecettesPage() {
                       {recette.category}
                     </span>
                   </div>
+                  {/* Action buttons */}
+                  <div className="absolute top-3 left-3 flex space-x-2">
+                    <Button asChild size="sm" variant="ghost" className="p-2 bg-white/80 hover:bg-white rounded-full">
+                      <Link href={`/recettes/${recette.id}/modifier`}>
+                        <Edit2 className="w-4 h-4 text-blue-600" />
+                      </Link>
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        playClickSound()
+                        setShowDeleteConfirm(recette.id)
+                      }}
+                      className="p-2 bg-white/80 hover:bg-white rounded-full"
+                    >
+                      <Trash2 className="w-4 h-4 text-red-600" />
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="p-4">
                   <h3 className="font-semibold text-lg text-gray-800 mb-2">{recette.title}</h3>
-                  <div className="flex items-center justify-between text-sm text-gray-600">
+                  <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
-                      <span>{recette.time}</span>
+                      <span>
+                        {Number.parseInt(recette.prepTime.replace(" min", "")) +
+                          Number.parseInt(recette.cookTime.replace(" min", ""))}{" "}
+                        min
+                      </span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Users className="w-4 h-4" />
@@ -474,7 +587,7 @@ export default function RecettesPage() {
 
                   <Button
                     asChild
-                    className="w-full mt-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                    className="w-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
                   >
                     <Link href={`/recettes/${recette.id}`}>Voir la recette</Link>
                   </Button>
@@ -483,7 +596,7 @@ export default function RecettesPage() {
             ))}
           </div>
         ) : (
-          // Mode Liste (nouveau)
+          // Mode Liste
           <div className="space-y-4">
             {filteredAndSortedRecettes.map((recette, index) => (
               <div
@@ -494,11 +607,14 @@ export default function RecettesPage() {
                 <div className="flex items-center p-4">
                   <div className="relative flex-shrink-0 w-20 h-20 mr-4">
                     <img
-                      src={recette.image || "/placeholder.svg"}
+                      src={recette.image || "/placeholder.svg?height=80&width=80&query=recette"}
                       alt={recette.title}
                       className="w-full h-full object-cover rounded-xl"
                     />
-                    <button className="absolute -top-1 -right-1 p-1 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors">
+                    <button
+                      onClick={() => handleLikeToggle(recette.id)}
+                      className="absolute -top-1 -right-1 p-1 bg-white rounded-full shadow-md hover:bg-gray-50 transition-colors"
+                    >
                       <Heart className={`w-3 h-3 ${recette.liked ? "text-pink-500 fill-current" : "text-gray-400"}`} />
                     </button>
                   </div>
@@ -510,7 +626,11 @@ export default function RecettesPage() {
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
-                            <span>{recette.time}</span>
+                            <span>
+                              {Number.parseInt(recette.prepTime.replace(" min", "")) +
+                                Number.parseInt(recette.cookTime.replace(" min", ""))}{" "}
+                              min
+                            </span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Users className="w-3 h-3" />
@@ -525,13 +645,36 @@ export default function RecettesPage() {
                         </span>
                       </div>
 
-                      <Button
-                        asChild
-                        size="sm"
-                        className="ml-4 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 flex-shrink-0"
-                      >
-                        <Link href={`/recettes/${recette.id}`}>Voir</Link>
-                      </Button>
+                      <div className="flex items-center space-x-2 ml-4">
+                        <Button
+                          asChild
+                          size="sm"
+                          variant="ghost"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        >
+                          <Link href={`/recettes/${recette.id}/modifier`}>
+                            <Edit2 className="w-4 h-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            playClickSound()
+                            setShowDeleteConfirm(recette.id)
+                          }}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          asChild
+                          size="sm"
+                          className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 flex-shrink-0"
+                        >
+                          <Link href={`/recettes/${recette.id}`}>Voir</Link>
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -544,7 +687,16 @@ export default function RecettesPage() {
           <div className="text-center py-12">
             <ChefHat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <p className="text-gray-600 text-lg">Aucune recette trouvée 🥺</p>
-            <p className="text-gray-500">Essaie avec d'autres mots-clés !</p>
+            <p className="text-gray-500 mb-4">Essaie avec d'autres mots-clés !</p>
+            <Button
+              asChild
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+            >
+              <Link href="/recettes/ajouter">
+                <Plus className="w-4 h-4 mr-2" />
+                Créer ta première recette
+              </Link>
+            </Button>
           </div>
         )}
       </div>
