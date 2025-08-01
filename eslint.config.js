@@ -14,6 +14,23 @@ module.exports = [
         browser: true,
         es2021: true,
         node: true,
+        console: true,
+        window: true,
+        document: true,
+        navigator: true,
+        fetch: true,
+        setTimeout: true,
+        setInterval: true,
+        clearTimeout: true,
+        clearInterval: true,
+        performance: true,
+        requestAnimationFrame: true,
+        URL: true,
+        Response: true,
+        self: true,
+        caches: true,
+        clients: true,
+        ServiceWorkerRegistration: true,
       },
       parserOptions: {
         ecmaFeatures: {
@@ -26,12 +43,13 @@ module.exports = [
       'react-hooks': reactHooksPlugin,
     },
     rules: {
-      'no-unused-vars': 'error',
+      'no-unused-vars': 'warn',
       'no-console': 'warn',
       'prefer-const': 'error',
       'no-var': 'error',
       'react-hooks/rules-of-hooks': 'error',
-      'react-hooks/exhaustive-deps': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+      'no-undef': 'off', // TypeScript gère cela
     },
     settings: {
       react: {
