@@ -128,7 +128,6 @@ export default function RecettePage({ params }: RecettePageProps) {
         name: ingredient.name,
         quantity: ingredient.quantity,
         completed: false,
-        category: "Divers", // Catégorie par défaut
         source: `Recette: ${recette?.title || "Recette"}`,
       }));
       
@@ -145,7 +144,6 @@ export default function RecettePage({ params }: RecettePageProps) {
         name: ingredient.name,
         quantity: ingredient.quantity,
         completed: false,
-        category: "Divers", // Catégorie par défaut
         source: `Recette: ${recette?.title || "Recette"}`,
       }));
       

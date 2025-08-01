@@ -3,15 +3,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, TrendingUp, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Search, ChevronDown, X } from "lucide-react";
 import { useIngredientSuggestions, IngredientSuggestion } from "@/hooks/use-ingredient-suggestions";
 
 interface IngredientAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
-  onSelect?: (suggestion: IngredientSuggestion) => void;
+  onSelectWithCategory?: (name: string, category: string) => void;
   placeholder?: string;
   className?: string;
   disabled?: boolean;
@@ -20,78 +20,96 @@ interface IngredientAutocompleteProps {
 export const IngredientAutocomplete: React.FC<IngredientAutocompleteProps> = ({
   value,
   onChange,
-  onSelect,
-  placeholder = "Nom de l'ingrédient...",
+  onSelectWithCategory,
+  placeholder = "Rechercher un ingrédient...",
   className = "",
   disabled = false
 }) => {
-  const { suggestions, popularSuggestions, filterSuggestions, clearSuggestions } = useIngredientSuggestions();
   const [isOpen, setIsOpen] = useState(false);
-  const [inputValue, setInputValue] = useState(value);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Synchroniser la valeur externe avec l'état interne
-  useEffect(() => {
-    setInputValue(value);
-  }, [value]);
+  const { suggestions, suggestionsWithCategories, suggestionsByCategory, popularSuggestions, allCategories } = useIngredientSuggestions(searchTerm);
 
-  // Gérer le clic en dehors pour fermer le dropdown
+  // Gérer la fermeture du dropdown quand on clique à l'extérieur
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
-        clearSuggestions();
+        setSelectedCategory(null);
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [clearSuggestions]);
+  }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
-    setInputValue(newValue);
-    onChange(newValue);
-
-    if (newValue.trim()) {
-      filterSuggestions(newValue);
-      setIsOpen(true);
-    } else {
-      clearSuggestions();
-      setIsOpen(false);
-    }
-  };
-
-  const handleInputFocus = () => {
-    if (inputValue.trim()) {
-      filterSuggestions(inputValue);
-      setIsOpen(true);
-    } else {
-      // Afficher les suggestions populaires quand l'input est vide et focus
-      setIsOpen(true);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: IngredientSuggestion) => {
-    setInputValue(suggestion.name);
-    onChange(suggestion.name);
-    setIsOpen(false);
-    clearSuggestions();
-    onSelect?.(suggestion);
-  };
-
+  // Gérer les touches clavier
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") {
       setIsOpen(false);
-      clearSuggestions();
+      setSelectedCategory(null);
     }
   };
+
+  const handleInputChange = (newValue: string) => {
+    setSearchTerm(newValue);
+    onChange(newValue);
+    setIsOpen(true);
+    setSelectedCategory(null);
+  };
+
+  const handleSuggestionClick = (suggestion: string | IngredientSuggestion) => {
+    if (typeof suggestion === 'string') {
+      onChange(suggestion);
+      setSearchTerm(suggestion);
+    } else {
+      onChange(suggestion.name);
+      setSearchTerm(suggestion.name);
+      // Si onSelectWithCategory est disponible, l'utiliser
+      if (onSelectWithCategory) {
+        onSelectWithCategory(suggestion.name, suggestion.category);
+      }
+    }
+    setIsOpen(false);
+    setSelectedCategory(null);
+    inputRef.current?.focus();
+  };
+
+  const handleInputFocus = () => {
+    if (!disabled) {
+      setIsOpen(true);
+    }
+  };
+
+  const clearInput = () => {
+    onChange("");
+    setSearchTerm("");
+    setIsOpen(false);
+    setSelectedCategory(null);
+    inputRef.current?.focus();
+  };
+
+  const toggleCategory = (category: string) => {
+    setSelectedCategory(selectedCategory === category ? null : category);
+  };
+
+  // Déterminer quelles suggestions afficher
+  const getDisplaySuggestions = () => {
+    if (selectedCategory && suggestionsByCategory[selectedCategory]) {
+      return suggestionsByCategory[selectedCategory];
+    }
+    
+    if (searchTerm.trim() === "") {
+      return popularSuggestions;
+    }
+    
+    return suggestionsWithCategories;
+  };
+
+  const displaySuggestions = getDisplaySuggestions();
 
   return (
     <div className={`relative ${className}`}>
@@ -99,71 +117,151 @@ export const IngredientAutocomplete: React.FC<IngredientAutocompleteProps> = ({
         <Input
           ref={inputRef}
           type="text"
-          value={inputValue}
-          onChange={handleInputChange}
+          value={value}
+          onChange={(e) => handleInputChange(e.target.value)}
           onFocus={handleInputFocus}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           disabled={disabled}
           className="pr-10"
         />
-        <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        
+        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center space-x-1">
+          {value && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={clearInput}
+              className="h-6 w-6 p-0 hover:bg-gray-100"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+          
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsOpen(!isOpen)}
+            className="h-6 w-6 p-0 hover:bg-gray-100"
+          >
+            <ChevronDown className={`h-3 w-3 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+          </Button>
+        </div>
       </div>
 
-      {/* Dropdown des suggestions */}
+      {/* Dropdown avec suggestions */}
       {isOpen && (
         <div
           ref={dropdownRef}
-          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-hidden"
+          className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-96 overflow-hidden"
         >
-          <ScrollArea className="h-full">
-            {/* Suggestions filtrées */}
-            {suggestions.length > 0 && (
-              <div className="p-2">
-                <div className="text-xs font-medium text-gray-500 mb-2 px-2">
-                  Suggestions
-                </div>
-                {suggestions.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-md flex items-center justify-between group"
-                  >
-                    <span className="text-sm">{suggestion.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {suggestion.frequency}x
+          {/* Barre de recherche dans le dropdown */}
+          <div className="p-3 border-b border-gray-100">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="Rechercher..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+
+          <ScrollArea className="max-h-80">
+            {/* Catégories */}
+            {searchTerm.trim() === "" && (
+              <div className="p-3 border-b border-gray-100">
+                <div className="text-sm font-medium text-gray-700 mb-2">Catégories populaires</div>
+                <div className="flex flex-wrap gap-1">
+                  {allCategories.slice(0, 6).map((category) => (
+                    <Badge
+                      key={category}
+                      variant={selectedCategory === category ? "default" : "secondary"}
+                      className="cursor-pointer hover:bg-primary/80"
+                      onClick={() => toggleCategory(category)}
+                    >
+                      {category}
                     </Badge>
-                  </button>
-                ))}
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Suggestions populaires si pas de suggestions filtrées */}
-            {suggestions.length === 0 && inputValue.trim() === "" && (
-              <div className="p-2">
-                <div className="text-xs font-medium text-gray-500 mb-2 px-2 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Ingrédients populaires
+            {/* Suggestions par catégorie */}
+            {selectedCategory && suggestionsByCategory[selectedCategory] && (
+              <div className="p-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  {selectedCategory} ({suggestionsByCategory[selectedCategory].length})
                 </div>
-                {popularSuggestions.slice(0, 6).map((suggestion, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
-                    className="w-full text-left px-3 py-2 hover:bg-gray-50 rounded-md flex items-center justify-between group"
-                  >
-                    <span className="text-sm">{suggestion.name}</span>
-                    <Badge variant="secondary" className="text-xs">
-                      {suggestion.frequency}x
-                    </Badge>
-                  </button>
-                ))}
+                <div className="space-y-1">
+                  {suggestionsByCategory[selectedCategory].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
-            {/* Message si aucune suggestion */}
-            {suggestions.length === 0 && inputValue.trim() !== "" && (
-              <div className="p-4 text-center text-gray-500 text-sm">
-                Aucun ingrédient trouvé
+            {/* Suggestions générales */}
+            {!selectedCategory && (
+              <div className="p-3">
+                <div className="text-sm font-medium text-gray-700 mb-2">
+                  {searchTerm.trim() === "" ? "Ingrédients populaires" : "Suggestions"}
+                </div>
+                <div className="space-y-1">
+                  {displaySuggestions.length > 0 ? (
+                    displaySuggestions.map((suggestion) => (
+                      <button
+                        key={typeof suggestion === 'string' ? suggestion : `${suggestion.name}-${suggestion.category}`}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                      >
+                        <div className="flex justify-between items-center">
+                          <span>{typeof suggestion === 'string' ? suggestion : suggestion.name}</span>
+                          {typeof suggestion !== 'string' && (
+                            <Badge variant="secondary" className="text-xs">
+                              {suggestion.category}
+                            </Badge>
+                          )}
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      Aucune suggestion trouvée
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Toutes les catégories */}
+            {searchTerm.trim() === "" && !selectedCategory && (
+              <div className="p-3 border-t border-gray-100">
+                <div className="text-sm font-medium text-gray-700 mb-2">Toutes les catégories</div>
+                <div className="grid grid-cols-2 gap-1">
+                  {allCategories.map((category) => (
+                    <button
+                      key={category}
+                      type="button"
+                      className="text-left px-3 py-2 text-sm hover:bg-gray-100 rounded-md transition-colors"
+                      onClick={() => toggleCategory(category)}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </ScrollArea>

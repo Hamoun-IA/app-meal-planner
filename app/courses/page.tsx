@@ -13,10 +13,13 @@ import {
   Settings,
   X,
   Check,
+  Database,
 } from "lucide-react";
 import { useState } from "react";
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple";
 import { useCourses } from "@/contexts/courses-context";
+import { useIngredientSuggestions } from "@/hooks/use-ingredient-suggestions";
+import { IngredientAutocomplete } from "@/components/ui/ingredient-autocomplete";
 
 export default function CoursesPage() {
   const [newItem, setNewItem] = useState("");
@@ -24,7 +27,7 @@ export default function CoursesPage() {
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState("");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState("Divers");
+  const [selectedItemCategory, setSelectedItemCategory] = useState<string>("");
 
   const { 
     items, 
@@ -36,7 +39,7 @@ export default function CoursesPage() {
     deleteCategory, 
     updateCategory,
     getCompletedCount,
-    getTotalCount 
+    getTotalCount
   } = useCourses();
 
   const { playBackSound, playClickSound } = useAppSoundsSimple();
@@ -46,16 +49,33 @@ export default function CoursesPage() {
     playBackSound();
   };
 
+  const { suggestionsWithCategories } = useIngredientSuggestions(newItem);
+
+  const handleSelectWithCategory = (name: string, category: string) => {
+    setSelectedItemCategory(category);
+  };
+
   const handleAddItem = () => {
     if (!newItem.trim()) return;
 
     playClickSound();
+    
+    // Utiliser la catégorie sélectionnée si disponible, sinon chercher dans les suggestions
+    let category = selectedItemCategory;
+    if (!category) {
+      const existingSuggestion = suggestionsWithCategories.find(
+        suggestion => suggestion.name.toLowerCase() === newItem.trim().toLowerCase()
+      );
+      category = existingSuggestion ? existingSuggestion.category : "";
+    }
+    
     addItem({
       name: newItem,
       completed: false,
-      category: selectedCategory,
+      category: category,
     });
     setNewItem("");
+    setSelectedItemCategory("");
   };
 
   const handleToggleItem = (id: number) => {
@@ -70,7 +90,7 @@ export default function CoursesPage() {
 
   // Gestion des catégories
   const handleAddCategory = () => {
-    if (!newCategory.trim() || categories.includes(newCategory)) return;
+    if (!newCategory.trim()) return;
 
     playClickSound();
     addCategory(newCategory);
@@ -78,43 +98,21 @@ export default function CoursesPage() {
   };
 
   const handleDeleteCategory = (categoryToDelete: string) => {
-    if (categoryToDelete === "Divers") return; // Empêcher la suppression de "Divers"
-
     playClickSound();
     deleteCategory(categoryToDelete);
-
-    // Si c'était la catégorie sélectionnée, basculer vers "Divers"
-    if (selectedCategory === categoryToDelete) {
-      setSelectedCategory("Divers");
-    }
   };
 
-  const startEditCategory = (category: string) => {
+  const handleEditCategory = (category: string) => {
     playClickSound();
     setEditingCategory(category);
     setEditCategoryName(category);
   };
 
   const saveEditCategory = () => {
-    if (!editCategoryName.trim() || editCategoryName === editingCategory) {
-      setEditingCategory(null);
-      return;
-    }
-
-    if (categories.includes(editCategoryName)) {
-      alert("Cette catégorie existe déjà !");
-      return;
-    }
+    if (!editCategoryName.trim()) return;
 
     playClickSound();
-
-    // Mettre à jour le nom de la catégorie
     updateCategory(editingCategory!, editCategoryName);
-
-    // Mettre à jour la catégorie sélectionnée si nécessaire
-    if (selectedCategory === editingCategory) {
-      setSelectedCategory(editCategoryName);
-    }
 
     setEditingCategory(null);
     setEditCategoryName("");
@@ -161,22 +159,33 @@ export default function CoursesPage() {
                   Liste de courses
                 </h1>
                 <p className="text-white/80 text-sm">
-                  {completedCount}/{totalCount} articles
+                  {totalCount} articles
                 </p>
               </div>
             </div>
           </div>
 
-          <Button
-            onClick={() => {
-              playClickSound();
-              setShowCategoryManager(!showCategoryManager);
-            }}
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Catégories
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => {
+                playClickSound();
+                setShowCategoryManager(!showCategoryManager);
+              }}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+            >
+              <Settings className="w-4 h-4 mr-2" />
+              Catégories
+            </Button>
+            <Button
+              asChild
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+            >
+              <Link href="/courses/gestion">
+                <Database className="w-4 h-4 mr-2" />
+                Gérer
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -274,7 +283,7 @@ export default function CoursesPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => startEditCategory(category)}
+                          onClick={() => handleEditCategory(category)}
                           className="h-8 w-8 p-0 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
                         >
                           <Edit2 className="w-3 h-3" />
@@ -301,35 +310,27 @@ export default function CoursesPage() {
         {/* Add Item */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up">
           <div className="space-y-3">
-            <div className="flex space-x-3">
-              <Input
+            {/* Champ de recherche avec autosuggestion */}
+            <div className="flex-1">
+              <IngredientAutocomplete
                 value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                placeholder="Ajouter un article... 🛒"
-                className="flex-1 rounded-full border-pink-200 focus:border-pink-400"
-                onKeyPress={(e) => e.key === "Enter" && handleAddItem()}
+                onChange={setNewItem}
+                placeholder="Ajouter un ingrédient..."
+                onSelectWithCategory={handleSelectWithCategory}
               />
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  playClickSound();
-                  setSelectedCategory(e.target.value);
-                }}
-                className="px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white"
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <Button
-                onClick={handleAddItem}
-                className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 Seuls les ingrédients déjà enregistrés sont proposés. Pour ajouter un nouvel article, utilisez la page de gestion.
+              </p>
             </div>
+            
+            {/* Bouton d'ajout */}
+            <Button
+              onClick={handleAddItem}
+              className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 px-6"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Ajouter
+            </Button>
           </div>
         </div>
 
@@ -337,8 +338,13 @@ export default function CoursesPage() {
         <div className="space-y-4">
           {displayedCategories.map((category, categoryIndex) => {
             const categoryItems = items.filter(
-              (item) => item.category === category
+              (item) => item.category === category // Plus besoin de filtrer les items complétés
             );
+
+            // Ne pas afficher les catégories vides
+            if (categoryItems.length === 0) {
+              return null;
+            }
 
             return (
               <div
@@ -350,8 +356,7 @@ export default function CoursesPage() {
                   <span className="w-3 h-3 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full mr-2"></span>
                   {category}
                   <span className="ml-2 text-sm text-gray-500">
-                    ({categoryItems.filter((item) => !item.completed).length}/
-                    {categoryItems.length})
+                    ({categoryItems.length} articles)
                   </span>
                 </h3>
 
@@ -359,46 +364,46 @@ export default function CoursesPage() {
                   {categoryItems.map((item) => (
                     <div
                       key={item.id}
-                      className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
-                        item.completed ? "bg-pink-50" : "hover:bg-gray-50"
-                      }`}
+                      className="flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 hover:bg-gray-50"
                     >
                       <Checkbox
                         checked={item.completed}
                         onCheckedChange={() => handleToggleItem(item.id)}
                         className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                       />
-                                             <div className="flex-1">
-                         <div className="flex items-center flex-wrap gap-1">
-                           <span
-                             className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}
-                           >
-                             {item.name}
-                           </span>
-                           {item.quantity && (
-                             <span className="text-sm text-pink-600 font-medium">
-                               {item.quantity}
-                             </span>
-                           )}
-                         </div>
-                         {item.source && (
-                           <div className="text-xs text-gray-400 mt-1">
-                             {item.source.split(', ').map((source, index) => (
-                               <span key={index} className="inline-block bg-gray-100 rounded px-1 mr-1 mb-1">
-                                 {source}
-                               </span>
-                             ))}
-                           </div>
-                         )}
-                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-gray-400 hover:text-red-500 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      
+                      <div className="flex-1">
+                          <div className="flex items-center flex-wrap gap-1">
+                            <span className="text-gray-800">
+                              {item.name}
+                            </span>
+                            {item.quantity && (
+                              <span className="text-sm text-pink-600 font-medium">
+                                {item.quantity}
+                              </span>
+                            )}
+                          </div>
+                          {item.source && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {item.source.split(', ').map((source, index) => (
+                                <span key={index} className="inline-block bg-gray-100 rounded px-1 mr-1 mb-1">
+                                  {source}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      
+                      <div className="flex items-center space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="text-gray-400 hover:text-red-500 hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>

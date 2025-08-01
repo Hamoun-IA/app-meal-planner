@@ -1,79 +1,182 @@
-import { useState, useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useRecettes } from "@/contexts/recettes-context";
+import { useCourses } from "@/contexts/courses-context";
+import { INGREDIENT_DATABASE } from "@/lib/ingredient-database";
 
+// Interface pour les suggestions avec catégorie
 export interface IngredientSuggestion {
   name: string;
-  frequency: number; // Nombre de fois où cet ingrédient apparaît
-  lastUsed?: string; // Date de dernière utilisation
+  category: string;
+  source: 'database' | 'history' | 'ingredients' | 'recipes';
 }
 
-export const useIngredientSuggestions = () => {
+export const useIngredientSuggestions = (searchTerm: string = "") => {
   const { recettes } = useRecettes();
-  const [suggestions, setSuggestions] = useState<IngredientSuggestion[]>([]);
-  const [filteredSuggestions, setFilteredSuggestions] = useState<IngredientSuggestion[]>([]);
+  const { ingredientHistory, databaseItems } = useCourses();
 
-  // Extraire tous les ingrédients uniques des recettes existantes
-  const allIngredients = useMemo(() => {
-    const ingredientMap = new Map<string, { count: number; lastUsed?: string }>();
+  const suggestions = useMemo(() => {
+    const normalizedSearch = searchTerm.toLowerCase().trim();
     
-    recettes.forEach(recette => {
-      recette.ingredients.forEach(ingredient => {
-        const name = ingredient.name.trim().toLowerCase();
-        if (name) {
-          const existing = ingredientMap.get(name);
-          if (existing) {
-            existing.count++;
-          } else {
-            ingredientMap.set(name, { count: 1 });
-          }
+    // Structure pour conserver les noms et catégories
+    const allSuggestions: IngredientSuggestion[] = [];
+    
+    // Ajouter les ingrédients de la base de données avec leurs catégories
+    Object.entries(INGREDIENT_DATABASE).forEach(([category, ingredients]) => {
+      ingredients.forEach(ingredient => {
+        if (ingredient.toLowerCase().includes(normalizedSearch)) {
+          allSuggestions.push({
+            name: ingredient,
+            category,
+            source: 'ingredients'
+          });
         }
       });
     });
+    
+    // Extraire les ingrédients des recettes existantes
+    recettes.forEach(recette => {
+      recette.ingredients.forEach(ingredient => {
+        if (ingredient.name.toLowerCase().includes(normalizedSearch)) {
+          allSuggestions.push({
+            name: ingredient.name,
+            category: "Divers", // Les ingrédients des recettes n'ont pas de catégorie
+            source: 'recipes'
+          });
+        }
+      });
+    });
+    
+    // Ajouter les ingrédients de l'historique manuel avec leurs catégories
+    ingredientHistory.forEach(item => {
+      if (item.name.toLowerCase().includes(normalizedSearch)) {
+        allSuggestions.push({
+          name: item.name,
+          category: item.category,
+          source: 'history'
+        });
+      }
+    });
+    
+    // Ajouter les articles de la base de données de gestion avec leurs catégories
+    databaseItems.forEach(item => {
+      if (item.name.toLowerCase().includes(normalizedSearch)) {
+        allSuggestions.push({
+          name: item.name,
+          category: item.category,
+          source: 'database'
+        });
+      }
+    });
+    
+    // Dédupliquer par nom et catégorie
+    const uniqueSuggestions = allSuggestions.filter((suggestion, index, self) => 
+      index === self.findIndex(s => s.name === suggestion.name && s.category === suggestion.category)
+    );
+    
+    // Trier par pertinence (base de données de gestion en premier, puis historique manuel, puis exact match, puis par ordre alphabétique)
+    const sortedSuggestions = uniqueSuggestions.sort((a, b) => {
+      // Priorité 1: Base de données de gestion
+      if (a.source === 'database' && b.source !== 'database') return -1;
+      if (a.source !== 'database' && b.source === 'database') return 1;
+      
+      // Priorité 2: Historique manuel
+      if (a.source === 'history' && b.source !== 'history') return -1;
+      if (a.source !== 'history' && b.source === 'history') return 1;
+      
+      // Priorité 3: Exact match
+      const aExact = a.name.toLowerCase() === normalizedSearch;
+      const bExact = b.name.toLowerCase() === normalizedSearch;
+      if (aExact && !bExact) return -1;
+      if (!aExact && bExact) return 1;
+      
+      // Priorité 4: Ordre alphabétique
+      return a.name.localeCompare(b.name, 'fr');
+    });
+    
+    return sortedSuggestions.slice(0, 20); // Limiter à 20 suggestions
+  }, [searchTerm, recettes, ingredientHistory, databaseItems]);
 
-    return Array.from(ingredientMap.entries()).map(([name, data]) => ({
-      name: name.charAt(0).toUpperCase() + name.slice(1), // Capitaliser
-      frequency: data.count,
-      lastUsed: data.lastUsed
-    })).sort((a, b) => b.frequency - a.frequency); // Trier par fréquence décroissante
-  }, [recettes]);
+  const suggestionsByCategory = useMemo(() => {
+    const normalizedSearch = searchTerm.toLowerCase().trim();
+    const categorizedSuggestions: { [key: string]: string[] } = {};
+    
+    // Ajouter les ingrédients de la base de données
+    Object.entries(INGREDIENT_DATABASE).forEach(([category, ingredients]) => {
+      const filtered = ingredients.filter(ingredient =>
+        ingredient.toLowerCase().includes(normalizedSearch)
+      );
+      
+      if (filtered.length > 0) {
+        categorizedSuggestions[category] = filtered.slice(0, 10);
+      }
+    });
+    
+    // Ajouter les ingrédients de l'historique manuel
+    ingredientHistory.forEach(item => {
+      if (item.name.toLowerCase().includes(normalizedSearch)) {
+        if (!categorizedSuggestions[item.category]) {
+          categorizedSuggestions[item.category] = [];
+        }
+        if (!categorizedSuggestions[item.category].includes(item.name)) {
+          categorizedSuggestions[item.category].push(item.name);
+        }
+      }
+    });
+    
+    // Ajouter les articles de la base de données de gestion
+    databaseItems.forEach(item => {
+      if (item.name.toLowerCase().includes(normalizedSearch)) {
+        if (!categorizedSuggestions[item.category]) {
+          categorizedSuggestions[item.category] = [];
+        }
+        if (!categorizedSuggestions[item.category].includes(item.name)) {
+          categorizedSuggestions[item.category].push(item.name);
+        }
+      }
+    });
+    
+    return categorizedSuggestions;
+  }, [searchTerm, ingredientHistory, databaseItems]);
 
-  // Mettre à jour les suggestions
-  useEffect(() => {
-    setSuggestions(allIngredients);
-  }, [allIngredients]);
-
-  // Filtrer les suggestions basées sur l'entrée utilisateur
-  const filterSuggestions = (input: string) => {
-    if (!input.trim()) {
-      setFilteredSuggestions(suggestions.slice(0, 10)); // Top 10 par défaut
-      return;
-    }
-
-    const inputLower = input.toLowerCase();
-    const filtered = suggestions
-      .filter(suggestion => 
-        suggestion.name.toLowerCase().includes(inputLower)
-      )
-      .slice(0, 8); // Limiter à 8 suggestions
-
-    setFilteredSuggestions(filtered);
-  };
-
-  // Obtenir les suggestions populaires (top 10)
-  const getPopularSuggestions = () => {
-    return suggestions.slice(0, 10);
-  };
-
-  // Obtenir les suggestions récentes (si on avait un historique)
-  const getRecentSuggestions = () => {
-    return suggestions.slice(0, 5); // Pour l'instant, retourne les 5 premiers
-  };
+  const popularSuggestions = useMemo(() => {
+    // Combiner les ingrédients populaires des recettes, de l'historique et de la base de données
+    const ingredientCount: { [key: string]: number } = {};
+    
+    // Compter les ingrédients des recettes
+    recettes.forEach(recette => {
+      recette.ingredients.forEach(ingredient => {
+        const name = ingredient.name.toLowerCase();
+        ingredientCount[name] = (ingredientCount[name] || 0) + 1;
+      });
+    });
+    
+    // Ajouter les ingrédients de l'historique avec leur compteur d'utilisation
+    ingredientHistory.forEach(item => {
+      const name = item.name.toLowerCase();
+      ingredientCount[name] = (ingredientCount[name] || 0) + item.usageCount;
+    });
+    
+    // Ajouter les articles de la base de données de gestion
+    databaseItems.forEach(item => {
+      const name = item.name.toLowerCase();
+      ingredientCount[name] = (ingredientCount[name] || 0) + 1; // +1 pour chaque article de la base
+    });
+    
+    return Object.entries(ingredientCount)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 10)
+      .map(([name]) => name);
+  }, [recettes, ingredientHistory, databaseItems]);
 
   return {
-    suggestions: filteredSuggestions,
-    popularSuggestions: getPopularSuggestions(),
-    recentSuggestions: getRecentSuggestions(),
-    filterSuggestions,
-    clearSuggestions: () => setFilteredSuggestions([])
+    suggestions: suggestions.map(s => s.name), // Compatibilité avec l'existant
+    suggestionsWithCategories: suggestions, // Nouvelles suggestions avec catégories
+    suggestionsByCategory,
+    popularSuggestions,
+    allCategories: [...new Set([
+      ...Object.keys(INGREDIENT_DATABASE), 
+      ...ingredientHistory.map(item => item.category),
+      ...databaseItems.map(item => item.category)
+    ])]
   };
 }; 

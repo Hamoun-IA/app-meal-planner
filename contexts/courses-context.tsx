@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { categorizeIngredient } from "@/lib/ingredient-database";
 
 export interface CourseItem {
   id: number;
@@ -11,19 +12,39 @@ export interface CourseItem {
   source?: string; // Pour indiquer d'où vient l'article (ex: "Recette: Nom de la recette")
 }
 
+// Interface pour l'historique des ingrédients
+export interface IngredientHistory {
+  name: string;
+  category: string;
+  lastUsed: number; // timestamp
+  usageCount: number;
+}
+
 interface CoursesContextType {
   items: CourseItem[];
   categories: string[];
+  ingredientHistory: IngredientHistory[];
   addItem: (item: Omit<CourseItem, "id">) => void;
   addItems: (items: Omit<CourseItem, "id">[]) => void;
   toggleItem: (id: number) => void;
   deleteItem: (id: number) => void;
+  updateItem: (id: number, updates: Partial<Omit<CourseItem, "id">>) => void;
+  getItem: (id: number) => CourseItem | undefined;
   addCategory: (category: string) => void;
   deleteCategory: (category: string) => void;
   updateCategory: (oldName: string, newName: string) => void;
   getItemsByCategory: (category: string) => CourseItem[];
   getCompletedCount: () => number;
   getTotalCount: () => number;
+  getIngredientHistory: () => IngredientHistory[];
+  addToHistory: (name: string, category: string) => void;
+  // Fonctions pour la base de données de gestion (INDÉPENDANTE)
+  databaseItems: CourseItem[];
+  addDatabaseItem: (item: Omit<CourseItem, "id">) => void;
+  updateDatabaseItem: (id: number, updates: Partial<Omit<CourseItem, "id">>) => void;
+  deleteDatabaseItem: (id: number) => void;
+  getDatabaseItem: (id: number) => CourseItem | undefined;
+  getDatabaseItems: () => CourseItem[];
 }
 
 const CoursesContext = createContext<CoursesContextType | undefined>(undefined);
@@ -171,47 +192,97 @@ const convertToCommonUnit = (quantity: { value: number; unit: string }, targetUn
 };
 
 export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) => {
+  // Liste de courses active (pour la page /courses)
   const [items, setItems] = useState<CourseItem[]>([
-    { id: 1, name: "Lait", completed: false, category: "Produits laitiers" },
-    { id: 2, name: "Pain", completed: true, category: "Boulangerie" },
-    { id: 3, name: "Pommes", completed: false, category: "Fruits & Légumes" },
-    { id: 4, name: "Chocolat", completed: false, category: "Épicerie sucrée" },
-    { id: 5, name: "Yaourts", completed: true, category: "Produits laitiers" },
+    { id: 1, name: "Lait", completed: false, category: "Produits Laitiers" },
+    { id: 2, name: "Pain", completed: true, category: "Céréales et Pains" },
+    { id: 3, name: "Pommes", completed: false, category: "Fruits et Légumes" },
+    { id: 4, name: "Chocolat", completed: false, category: "Sucreries" },
+    { id: 5, name: "Yaourts", completed: true, category: "Produits Laitiers" },
   ]);
 
+  // Base de données de gestion (pour la page /courses/gestion) - COMPLÈTEMENT INDÉPENDANTE
+  const [databaseItems, setDatabaseItems] = useState<CourseItem[]>([]);
+
   const [categories, setCategories] = useState([
-    "Produits laitiers",
-    "Boulangerie",
-    "Fruits & Légumes",
-    "Épicerie sucrée",
-    "Viande & Poisson",
-    "Surgelés",
+    "Fruits et Légumes",
+    "Viandes et Poissons", 
+    "Produits Laitiers",
+    "Céréales et Pains",
+    "Épices et Condiments",
     "Boissons",
-    "Hygiène & Beauté",
-    "Entretien",
+    "Sucreries",
     "Divers",
   ]);
 
+  const [ingredientHistory, setIngredientHistory] = useState<IngredientHistory[]>([]);
+
+  useEffect(() => {
+    const savedItems = localStorage.getItem("courseItems");
+    const savedDatabaseItems = localStorage.getItem("databaseItems");
+    const savedCategories = localStorage.getItem("courseCategories");
+    const savedHistory = localStorage.getItem("ingredientHistory");
+
+    if (savedItems) {
+      setItems(JSON.parse(savedItems));
+    }
+    if (savedDatabaseItems) {
+      setDatabaseItems(JSON.parse(savedDatabaseItems));
+    }
+    if (savedCategories) {
+      setCategories(JSON.parse(savedCategories));
+    }
+    if (savedHistory) {
+      setIngredientHistory(JSON.parse(savedHistory));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("courseItems", JSON.stringify(items));
+  }, [items]);
+
+  useEffect(() => {
+    localStorage.setItem("databaseItems", JSON.stringify(databaseItems));
+  }, [databaseItems]);
+
+  useEffect(() => {
+    localStorage.setItem("courseCategories", JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem("ingredientHistory", JSON.stringify(ingredientHistory));
+  }, [ingredientHistory]);
+
   const addItem = (item: Omit<CourseItem, "id">) => {
     setItems((prev) => {
-      // Chercher un item existant avec le même nom et la même catégorie
+      // Catégoriser automatiquement seulement si aucune catégorie n'est spécifiée
+      const categorizedItem = {
+        ...item,
+        category: item.category || categorizeIngredient(item.name, categories)
+      };
+
+      // Enregistrer dans l'historique si c'est un ajout manuel (pas depuis une recette)
+      if (!categorizedItem.source || !categorizedItem.source.includes("Recette:")) {
+        addToHistory(categorizedItem.name, categorizedItem.category);
+      }
+
+      // Chercher un item existant avec le même nom (peu importe la catégorie)
       const existingItemIndex = prev.findIndex(
         (existing) => 
-          existing.name.toLowerCase() === item.name.toLowerCase() && 
-          existing.category === item.category
+          existing.name.toLowerCase() === categorizedItem.name.toLowerCase()
       );
 
       if (existingItemIndex !== -1) {
         // Fusionner avec l'item existant
         const existingItem = prev[existingItemIndex];
-        const newQuantity = item.quantity && existingItem.quantity 
-          ? addQuantities(existingItem.quantity, item.quantity)
-          : item.quantity || existingItem.quantity;
+        const newQuantity = categorizedItem.quantity && existingItem.quantity 
+          ? addQuantities(existingItem.quantity, categorizedItem.quantity)
+          : categorizedItem.quantity || existingItem.quantity;
         
         // Fusionner les sources
-        const newSource = existingItem.source && item.source
-          ? `${existingItem.source}, ${item.source}`
-          : item.source || existingItem.source;
+        const newSource = existingItem.source && categorizedItem.source
+          ? `${existingItem.source}, ${categorizedItem.source}`
+          : categorizedItem.source || existingItem.source;
 
         const updatedItems = [...prev];
         updatedItems[existingItemIndex] = {
@@ -224,9 +295,10 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
       } else {
         // Ajouter un nouvel item
         const newItem: CourseItem = {
-          ...item,
-          id: Date.now(),
+          ...categorizedItem,
+          id: Math.max(...prev.map((item) => item.id), 0) + 1,
         };
+        
         return [...prev, newItem];
       }
     });
@@ -237,24 +309,34 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
       let updatedItems = [...prev];
       
       newItems.forEach((newItem) => {
-        // Chercher un item existant avec le même nom et la même catégorie
+        // Catégoriser automatiquement seulement si aucune catégorie n'est spécifiée
+        const categorizedItem = {
+          ...newItem,
+          category: newItem.category || categorizeIngredient(newItem.name, categories)
+        };
+
+        // Enregistrer dans l'historique si c'est un ajout manuel (pas depuis une recette)
+        if (!categorizedItem.source || !categorizedItem.source.includes("Recette:")) {
+          addToHistory(categorizedItem.name, categorizedItem.category);
+        }
+
+        // Chercher un item existant avec le même nom (peu importe la catégorie)
         const existingItemIndex = updatedItems.findIndex(
           (existing) => 
-            existing.name.toLowerCase() === newItem.name.toLowerCase() && 
-            existing.category === newItem.category
+            existing.name.toLowerCase() === categorizedItem.name.toLowerCase()
         );
 
         if (existingItemIndex !== -1) {
           // Fusionner avec l'item existant
           const existingItem = updatedItems[existingItemIndex];
-          const newQuantity = newItem.quantity && existingItem.quantity 
-            ? addQuantities(existingItem.quantity, newItem.quantity)
-            : newItem.quantity || existingItem.quantity;
+          const newQuantity = categorizedItem.quantity && existingItem.quantity 
+            ? addQuantities(existingItem.quantity, categorizedItem.quantity)
+            : categorizedItem.quantity || existingItem.quantity;
           
           // Fusionner les sources
-          const newSource = existingItem.source && newItem.source
-            ? `${existingItem.source}, ${newItem.source}`
-            : newItem.source || existingItem.source;
+          const newSource = existingItem.source && categorizedItem.source
+            ? `${existingItem.source}, ${categorizedItem.source}`
+            : categorizedItem.source || existingItem.source;
 
           updatedItems[existingItemIndex] = {
             ...existingItem,
@@ -264,8 +346,8 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
         } else {
           // Ajouter un nouvel item
           const itemWithId: CourseItem = {
-            ...newItem,
-            id: Date.now() + Math.random(),
+            ...categorizedItem,
+            id: Math.max(...updatedItems.map((item) => item.id), 0) + 1,
           };
           updatedItems.push(itemWithId);
         }
@@ -276,15 +358,22 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
   };
 
   const toggleItem = (id: number) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, completed: !item.completed } : item
-      )
-    );
+    // Supprimer directement l'article de la liste de courses
+    setItems((prev) => prev.filter((item) => item.id !== id));
   };
 
   const deleteItem = (id: number) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const updateItem = (id: number, updates: Partial<Omit<CourseItem, "id">>) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+  };
+
+  const getItem = (id: number) => {
+    return items.find((item) => item.id === id);
   };
 
   const addCategory = (category: string) => {
@@ -326,26 +415,97 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
   };
 
   const getCompletedCount = () => {
-    return items.filter((item) => item.completed).length;
+    // Plus d'articles complétés dans la liste active (ils sont supprimés)
+    return 0;
   };
 
   const getTotalCount = () => {
     return items.length;
   };
 
+  const getIngredientHistory = () => {
+    return ingredientHistory;
+  };
+
+  const addToHistory = (name: string, category: string) => {
+    setIngredientHistory((prev) => {
+      const existingItem = prev.find(
+        (item) => item.name === name && item.category === category
+      );
+      if (existingItem) {
+        return prev.map((item) =>
+          item.name === name && item.category === category
+            ? { ...item, usageCount: item.usageCount + 1, lastUsed: Date.now() }
+            : item
+        );
+      } else {
+        return [
+          ...prev,
+          {
+            name,
+            category,
+            lastUsed: Date.now(),
+            usageCount: 1,
+          },
+        ];
+      }
+    });
+  };
+
+  // Fonctions pour la base de données de gestion (COMPLÈTEMENT INDÉPENDANTE)
+  const addDatabaseItem = (item: Omit<CourseItem, "id">) => {
+    setDatabaseItems((prev) => {
+      const newItem: CourseItem = {
+        ...item,
+        id: Math.max(...prev.map((item) => item.id), 0) + 1,
+      };
+      return [...prev, newItem];
+    });
+  };
+
+  const updateDatabaseItem = (id: number, updates: Partial<Omit<CourseItem, "id">>) => {
+    setDatabaseItems((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...updates } : item))
+    );
+  };
+
+  const deleteDatabaseItem = (id: number) => {
+    setDatabaseItems((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const getDatabaseItem = (id: number) => {
+    return databaseItems.find((item) => item.id === id);
+  };
+
+  const getDatabaseItems = () => {
+    return databaseItems;
+  };
+
   const value: CoursesContextType = {
     items,
     categories,
+    ingredientHistory,
     addItem,
     addItems,
     toggleItem,
     deleteItem,
+    updateItem,
+    getItem,
     addCategory,
     deleteCategory,
     updateCategory,
     getItemsByCategory,
     getCompletedCount,
     getTotalCount,
+    getIngredientHistory,
+    addToHistory,
+    // Fonctions pour la base de données de gestion (INDÉPENDANTE)
+    databaseItems,
+    addDatabaseItem,
+    updateDatabaseItem,
+    deleteDatabaseItem,
+    getDatabaseItem,
+    getDatabaseItems,
   };
 
   return (
