@@ -1,0 +1,344 @@
+// =============================================================================
+// SCHÉMA PRISMA - ASSISTANTE BABOUNETTE
+// =============================================================================
+// Configuration pour PostgreSQL avec extension pgvector
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =============================================================================
+// MODÈLES PRINCIPAUX
+// =============================================================================
+
+/// Modèle utilisateur avec authentification et préférences
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Préférences utilisateur
+  preferences UserPreferences?
+  
+  // Relations
+  recipes     Recipe[]
+  mealPlans   MealPlan[]
+  shoppingLists ShoppingList[]
+  favorites   FavoriteRecipe[]
+  chatHistory ChatMessage[]
+
+  @@map("users")
+}
+
+/// Préférences utilisateur pour personnalisation IA
+model UserPreferences {
+  id                String  @id @default(cuid())
+  userId            String  @unique
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Préférences alimentaires
+  dietaryRestrictions String[] // ["vegetarian", "gluten-free", "dairy-free"]
+  allergies          String[] // ["nuts", "shellfish", "eggs"]
+  cuisinePreferences String[] // ["french", "italian", "asian"]
+  
+  // Préférences nutritionnelles
+  calorieTarget      Int?    // Calories quotidiennes cibles
+  proteinTarget      Int?    // Grammes de protéines
+  carbTarget         Int?    // Grammes de glucides
+  fatTarget          Int?    // Grammes de lipides
+  
+  // Préférences pratiques
+  cookingTime        Int?    // Temps de cuisson max (minutes)
+  difficultyLevel    String? // "beginner", "intermediate", "advanced"
+  servingsPerMeal    Int?    // Nombre de portions par repas
+  
+  // Préférences budget
+  budgetPerMeal      Float?  // Budget par repas en euros
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_preferences")
+}
+
+/// Modèle recette avec embeddings vectoriels
+model Recipe {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  instructions String[]
+  prepTime    Int      // Minutes
+  cookTime    Int      // Minutes
+  servings    Int
+  difficulty  String   // "beginner", "intermediate", "advanced"
+  cuisine     String?  // "french", "italian", "asian"
+  
+  // Images
+  imageUrl    String?
+  thumbnailUrl String?
+  
+  // Métadonnées
+  tags        String[]
+  categories  String[]
+  
+  // Informations nutritionnelles
+  calories    Int?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  fiber       Float?
+  sugar       Float?
+  sodium      Float?
+  
+  // Embeddings vectoriels pour recherche RAG
+  embedding   Unsupported("vector(768)")? // OpenAI text-embedding-3-small
+  searchIndex RecipeSearchIndex?
+  
+  // Relations
+  userId      String
+  user        User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredients RecipeIngredient[]
+  mealPlans   MealPlanRecipe[]
+  favorites   FavoriteRecipe[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([embedding])
+  @@index([userId])
+  @@index([cuisine])
+  @@index([difficulty])
+  @@map("recipes")
+}
+
+/// Modèle ingrédient avec informations nutritionnelles
+model Ingredient {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  
+  // Informations nutritionnelles par 100g
+  calories    Float?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  fiber       Float?
+  sugar       Float?
+  sodium      Float?
+  
+  // Catégories
+  category    String?  // "vegetables", "fruits", "proteins", "grains"
+  allergens   String[] // ["nuts", "gluten", "dairy"]
+  
+  // Relations
+  recipeIngredients RecipeIngredient[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([category])
+  @@map("ingredients")
+}
+
+/// Table de liaison recette-ingrédient avec quantités
+model RecipeIngredient {
+  id           String @id @default(cuid())
+  recipeId     String
+  ingredientId String
+  quantity     Float
+  unit         String  // "g", "ml", "pieces", "tbsp"
+  notes        String?
+  
+  // Relations
+  recipe     Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredient Ingredient @relation(fields: [ingredientId], references: [id], onDelete: Cascade)
+  
+  @@unique([recipeId, ingredientId])
+  @@index([recipeId])
+  @@index([ingredientId])
+  @@map("recipe_ingredients")
+}
+
+/// Modèle plan de repas hebdomadaire
+model MealPlan {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Période du plan
+  startDate   DateTime
+  endDate     DateTime
+  
+  // Métadonnées
+  name        String?
+  description String?
+  totalCalories Int?
+  totalCost   Float?
+  
+  // Relations
+  recipes     MealPlanRecipe[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([startDate])
+  @@map("meal_plans")
+}
+
+/// Table de liaison plan de repas-recette
+model MealPlanRecipe {
+  id        String @id @default(cuid())
+  mealPlanId String
+  recipeId   String
+  dayOfWeek  Int    // 0-6 (dimanche-samedi)
+  mealType   String // "breakfast", "lunch", "dinner", "snack"
+  servings   Int    // Nombre de portions
+  
+  // Relations
+  mealPlan MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  @@unique([mealPlanId, recipeId, dayOfWeek, mealType])
+  @@index([mealPlanId])
+  @@index([recipeId])
+  @@map("meal_plan_recipes")
+}
+
+/// Modèle liste de courses
+model ShoppingList {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  name        String
+  description String?
+  isCompleted Boolean  @default(false)
+  
+  // Relations
+  items       ShoppingListItem[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("shopping_lists")
+}
+
+/// Éléments de la liste de courses
+model ShoppingListItem {
+  id            String @id @default(cuid())
+  shoppingListId String
+  shoppingList   ShoppingList @relation(fields: [shoppingListId], references: [id], onDelete: Cascade)
+  
+  name          String
+  quantity      Float
+  unit          String
+  isCompleted   Boolean @default(false)
+  notes         String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shoppingListId])
+  @@map("shopping_list_items")
+}
+
+/// Recettes favorites
+model FavoriteRecipe {
+  id       String @id @default(cuid())
+  userId   String
+  recipeId String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, recipeId])
+  @@index([userId])
+  @@index([recipeId])
+  @@map("favorite_recipes")
+}
+
+// =============================================================================
+// MODÈLES IA ET CHAT
+// =============================================================================
+
+/// Historique des conversations IA
+model ChatMessage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Contenu du message
+  content   String
+  role      String   // "user", "assistant", "system"
+  
+  // Métadonnées IA
+  agentType String?  // "chef", "nutritionist", "planner", "chat"
+  tokens    Int?     // Nombre de tokens utilisés
+  model     String?  // Modèle IA utilisé
+  
+  // Contexte
+  sessionId String?
+  context   Json?    // Contexte de la conversation
+  
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
+}
+
+/// Cache des embeddings pour optimisation
+model EmbeddingCache {
+  id        String   @id @default(cuid())
+  text      String   @unique
+  embedding Unsupported("vector(768)")
+  model     String   @default("text-embedding-3-small")
+  createdAt DateTime @default(now())
+
+  @@index([embedding])
+  @@map("embedding_cache")
+}
+
+// =============================================================================
+// INDEX VECTORIELS POUR RAG
+// =============================================================================
+
+/// Index pour recherche sémantique de recettes
+model RecipeSearchIndex {
+  id        String   @id @default(cuid())
+  recipeId  String   @unique
+  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  
+  // Texte indexé pour recherche
+  searchText String  // Titre + description + ingrédients + instructions
+  embedding  Unsupported("vector(768)")
+  
+  // Métadonnées de recherche
+  tags      String[]
+  categories String[]
+  cuisine   String?
+  difficulty String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([embedding])
+  @@index([tags])
+  @@index([categories])
+  @@index([cuisine])
+  @@index([difficulty])
+  @@map("recipe_search_index")
+}
