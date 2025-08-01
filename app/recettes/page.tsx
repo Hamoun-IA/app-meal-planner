@@ -25,6 +25,9 @@ export default function RecettesPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState<"alphabetical" | "time" | null>(null)
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
+  const [filters, setFilters] = useState({
+    difficulty: [] as string[],
+  })
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -74,11 +77,30 @@ export default function RecettesPage() {
     },
   ]
 
-  const filteredRecettes = recettes.filter(
-    (recette) =>
+  const handleFilterChange = (filterType: string, value: string) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: prev[filterType as keyof typeof prev].includes(value)
+        ? prev[filterType as keyof typeof prev].filter((item: string) => item !== value)
+        : [...prev[filterType as keyof typeof prev], value],
+    }))
+  }
+
+  const clearFilters = () => {
+    setFilters({
+      difficulty: [],
+    })
+  }
+
+  const filteredRecettes = recettes.filter((recette) => {
+    const matchesSearch =
       recette.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recette.category.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+      recette.category.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesDifficulty = filters.difficulty.length === 0 || filters.difficulty.includes(recette.difficulty)
+
+    return matchesSearch && matchesDifficulty
+  })
 
   const filteredAndSortedRecettes = filteredRecettes.sort((a, b) => {
     if (!sortBy) return 0
@@ -217,6 +239,52 @@ export default function RecettesPage() {
                   Réinitialiser
                 </Button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-700 flex items-center">
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.707A1 1 0 013 7V4z"
+                />
+              </svg>
+              Filtrer par :
+            </h3>
+            {filters.difficulty.length > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-gray-500 hover:text-gray-700">
+                Effacer filtres
+              </Button>
+            )}
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <h4 className="text-xs font-medium text-gray-600 mb-2">Niveau de difficulté</h4>
+              <div className="flex flex-wrap gap-2">
+                {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
+                  <Button
+                    key={difficulty}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleFilterChange("difficulty", difficulty)}
+                    className={`transition-all ${
+                      filters.difficulty.includes(difficulty)
+                        ? "bg-pink-100 border-pink-300 text-pink-700"
+                        : "border-gray-200 hover:bg-pink-50"
+                    }`}
+                  >
+                    {difficulty}
+                    {filters.difficulty.includes(difficulty) && <span className="ml-1 text-pink-500">✓</span>}
+                  </Button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
