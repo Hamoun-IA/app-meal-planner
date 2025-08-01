@@ -107,18 +107,7 @@ export default function CoursesPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Progression</span>
-            <span className="text-sm text-gray-500">{Math.round((completedCount / totalCount) * 100)}%</span>
-          </div>
-          <div className="w-full bg-pink-100 rounded-full h-2">
-            <div
-              className="bg-gradient-to-r from-pink-500 to-rose-500 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${(completedCount / totalCount) * 100}%` }}
-            ></div>
-          </div>
-        </div>
+        
 
         {/* Shopping List by Category */}
         <div className="space-y-4">
