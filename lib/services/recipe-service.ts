@@ -121,7 +121,7 @@ export class RecipeService {
         // Générer l'embedding en arrière-plan
         this.updateRecipeEmbedding(newRecipe.id).catch(console.error);
 
-        return newRecipe;
+        return newRecipe as unknown as RecipeWithIngredients;
       });
 
       return recipe;
@@ -167,7 +167,25 @@ export class RecipeService {
         const updatedRecipe = await tx.recipe.update({
           where: { id: recipeId },
           data: {
-            ...validatedData,
+            title: validatedData.title,
+            description: validatedData.description,
+            instructions: validatedData.instructions,
+            prepTime: validatedData.prepTime,
+            cookTime: validatedData.cookTime,
+            servings: validatedData.servings,
+            difficulty: validatedData.difficulty,
+            cuisine: validatedData.cuisine,
+            imageUrl: validatedData.imageUrl,
+            thumbnailUrl: validatedData.thumbnailUrl,
+            tags: validatedData.tags,
+            categories: validatedData.categories,
+            calories: validatedData.calories,
+            protein: validatedData.protein,
+            carbs: validatedData.carbs,
+            fat: validatedData.fat,
+            fiber: validatedData.fiber,
+            sugar: validatedData.sugar,
+            sodium: validatedData.sodium,
             ...(validatedData.ingredients && {
               ingredients: {
                 create: validatedData.ingredients,
@@ -186,7 +204,7 @@ export class RecipeService {
         // Mettre à jour l'embedding
         this.updateRecipeEmbedding(recipeId).catch(console.error);
 
-        return updatedRecipe;
+        return updatedRecipe as unknown as RecipeWithIngredients;
       });
 
       return recipe;
@@ -202,7 +220,7 @@ export class RecipeService {
    * Récupère une recette par ID
    */
   async getRecipeById(recipeId: string): Promise<RecipeWithIngredients | null> {
-    return await prisma.recipe.findUnique({
+    const recipe = await prisma.recipe.findUnique({
       where: { id: recipeId },
       include: {
         ingredients: {
@@ -212,6 +230,7 @@ export class RecipeService {
         },
       },
     });
+    return recipe as unknown as RecipeWithIngredients | null;
   }
 
   /**
@@ -228,7 +247,7 @@ export class RecipeService {
     if (filters.tags && filters.tags.length > 0) where.tags = { hasSome: filters.tags };
     if (filters.categories && filters.categories.length > 0) where.categories = { hasSome: filters.categories };
 
-    return await prisma.recipe.findMany({
+    const recipes = await prisma.recipe.findMany({
       where,
       include: {
         ingredients: {
@@ -239,6 +258,7 @@ export class RecipeService {
       },
       orderBy: { createdAt: 'desc' },
     });
+    return recipes as unknown as RecipeWithIngredients[];
   }
 
   /**
@@ -321,7 +341,7 @@ export class RecipeService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return favorites.map(fav => fav.recipe);
+    return favorites.map(fav => fav.recipe as unknown as RecipeWithIngredients);
   }
 
   /**

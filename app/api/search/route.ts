@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ragService } from '@/lib/rag-service';
+import { simpleRagService } from '../../../lib/rag-service-simple';
 import { z } from 'zod';
 
 // =============================================================================
@@ -17,9 +17,9 @@ const SearchQuerySchema = z.object({
   maxPrepTime: z.number().int().positive().optional(),
   maxCookTime: z.number().int().positive().optional(),
   maxCalories: z.number().int().positive().optional(),
-  tags: z.array(z.string()).optional(),
-  categories: z.array(z.string()).optional(),
-  allergens: z.array(z.string()).optional(),
+  tags: z.any().optional(), // JSON pour SQLite
+  categories: z.any().optional(), // JSON pour SQLite
+  allergens: z.any().optional(), // JSON pour SQLite
   limit: z.number().int().positive().max(50).default(20),
 });
 
@@ -65,8 +65,8 @@ export async function GET(request: NextRequest) {
       limit,
     });
 
-    // Recherche avec RAG
-    const results = await ragService.searchRecipes(
+    // Recherche avec RAG simplifié
+    const results = await simpleRagService.searchRecipes(
       validatedParams.query,
       {
         cuisine: validatedParams.cuisine,
@@ -128,8 +128,8 @@ export async function POST(request: NextRequest) {
     // Validation des données
     const validatedData = SearchQuerySchema.parse(body);
     
-    // Recherche avec RAG
-    const results = await ragService.searchRecipes(
+    // Recherche avec RAG simplifié
+    const results = await simpleRagService.searchRecipes(
       validatedData.query,
       {
         cuisine: validatedData.cuisine,

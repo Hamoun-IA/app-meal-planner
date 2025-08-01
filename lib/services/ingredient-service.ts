@@ -22,7 +22,7 @@ const IngredientSchema = z.object({
   category: z.enum(['vegetables', 'fruits', 'proteins', 'grains', 'dairy', 'spices', 'other'], {
     errorMap: () => ({ message: 'Catégorie invalide' }),
   }).optional(),
-  allergens: z.array(z.string()).default([]),
+  allergens: z.any().default([]), // JSON pour SQLite
 });
 
 const IngredientUpdateSchema = IngredientSchema.partial();
@@ -290,8 +290,8 @@ export class IngredientService {
     return await prisma.ingredient.findMany({
       where: {
         OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { description: { contains: query, mode: 'insensitive' } },
+          { name: { contains: query } },
+          { description: { contains: query } },
         ],
       },
       orderBy: { name: 'asc' },
@@ -341,9 +341,11 @@ export class IngredientService {
     // Allergènes les plus courants
     const allergenCounts = new Map<string, number>();
     ingredients.forEach(ingredient => {
-      ingredient.allergens.forEach(allergen => {
-        allergenCounts.set(allergen, (allergenCounts.get(allergen) || 0) + 1);
-      });
+      if (Array.isArray(ingredient.allergens)) {
+        ingredient.allergens.forEach(allergen => {
+          allergenCounts.set(allergen, (allergenCounts.get(allergen) || 0) + 1);
+        });
+      }
     });
 
     const mostCommonAllergens = Array.from(allergenCounts.entries())
@@ -381,7 +383,9 @@ export class IngredientService {
 
     const allAllergens = new Set<string>();
     allergens.forEach(ingredient => {
-      ingredient.allergens.forEach(allergen => allAllergens.add(allergen));
+      if (Array.isArray(ingredient.allergens)) {
+        ingredient.allergens.forEach(allergen => allAllergens.add(allergen));
+      }
     });
 
     return Array.from(allAllergens).sort();

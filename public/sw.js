@@ -91,8 +91,13 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Ignorer les requêtes de développement
+  // Ignorer les requêtes de développement et les schémas non supportés
   if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    return;
+  }
+
+  // Ignorer les schémas non supportés (chrome-extension, data:, etc.)
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
     return;
   }
 

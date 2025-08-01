@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { ingredientService } from '@/lib/services/ingredient-service';
+import { ingredientService } from '../../../lib/services/ingredient-service';
 import { z } from 'zod';
 
 // =============================================================================
@@ -21,7 +21,7 @@ const CreateIngredientSchema = z.object({
   sugar: z.number().positive().optional(),
   sodium: z.number().positive().optional(),
   category: z.enum(['vegetables', 'fruits', 'proteins', 'grains', 'dairy', 'spices', 'other']).optional(),
-  allergens: z.array(z.string()).default([]),
+  allergens: z.any().default([]), // JSON pour SQLite
 });
 
 const UpdateIngredientSchema = CreateIngredientSchema.partial();

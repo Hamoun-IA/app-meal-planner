@@ -1,14 +1,14 @@
 // =============================================================================
 // SCHÉMA PRISMA - ASSISTANTE BABOUNETTE
 // =============================================================================
-// Configuration pour PostgreSQL avec extension pgvector
+// Configuration pour SQLite (développement) / PostgreSQL (production)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -44,10 +44,10 @@ model UserPreferences {
   userId            String  @unique
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   
-  // Préférences alimentaires
-  dietaryRestrictions String[] // ["vegetarian", "gluten-free", "dairy-free"]
-  allergies          String[] // ["nuts", "shellfish", "eggs"]
-  cuisinePreferences String[] // ["french", "italian", "asian"]
+  // Préférences alimentaires (JSON pour SQLite)
+  dietaryRestrictions Json? // ["vegetarian", "gluten-free", "dairy-free"]
+  allergies          Json? // ["nuts", "shellfish", "eggs"]
+  cuisinePreferences Json? // ["french", "italian", "asian"]
   
   // Préférences nutritionnelles
   calorieTarget      Int?    // Calories quotidiennes cibles
@@ -74,7 +74,7 @@ model Recipe {
   id          String   @id @default(cuid())
   title       String
   description String?
-  instructions String[]
+  instructions Json? // String[] converti en JSON pour SQLite
   prepTime    Int      // Minutes
   cookTime    Int      // Minutes
   servings    Int
@@ -85,9 +85,9 @@ model Recipe {
   imageUrl    String?
   thumbnailUrl String?
   
-  // Métadonnées
-  tags        String[]
-  categories  String[]
+  // Métadonnées (JSON pour SQLite)
+  tags        Json? // String[] converti en JSON pour SQLite
+  categories  Json? // String[] converti en JSON pour SQLite
   
   // Informations nutritionnelles
   calories    Int?
@@ -98,9 +98,9 @@ model Recipe {
   sugar       Float?
   sodium      Float?
   
-  // Embeddings vectoriels pour recherche RAG
-  embedding   Unsupported("vector(768)")? // OpenAI text-embedding-3-small
-  searchIndex RecipeSearchIndex?
+  // Embeddings vectoriels pour recherche RAG (désactivé pour SQLite)
+  // embedding   Unsupported("vector(768)")? // OpenAI text-embedding-3-small
+  // searchIndex RecipeSearchIndex?
   
   // Relations
   userId      String
@@ -112,7 +112,7 @@ model Recipe {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([embedding])
+  // @@index([embedding]) // Désactivé pour SQLite
   @@index([userId])
   @@index([cuisine])
   @@index([difficulty])
@@ -136,7 +136,7 @@ model Ingredient {
   
   // Catégories
   category    String?  // "vegetables", "fruits", "proteins", "grains"
-  allergens   String[] // ["nuts", "gluten", "dairy"]
+  allergens   Json? // String[] converti en JSON pour SQLite
   
   // Relations
   recipeIngredients RecipeIngredient[]
@@ -300,45 +300,49 @@ model ChatMessage {
   @@map("chat_messages")
 }
 
-/// Cache des embeddings pour optimisation
-model EmbeddingCache {
-  id        String   @id @default(cuid())
-  text      String   @unique
-  embedding Unsupported("vector(768)")
-  model     String   @default("text-embedding-3-small")
-  createdAt DateTime @default(now())
-
-  @@index([embedding])
-  @@map("embedding_cache")
-}
-
 // =============================================================================
-// INDEX VECTORIELS POUR RAG
+// MODÈLES IA ET CHAT (VECTORIELS DÉSACTIVÉS POUR SQLITE)
 // =============================================================================
 
-/// Index pour recherche sémantique de recettes
-model RecipeSearchIndex {
-  id        String   @id @default(cuid())
-  recipeId  String   @unique
-  recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
-  
-  // Texte indexé pour recherche
-  searchText String  // Titre + description + ingrédients + instructions
-  embedding  Unsupported("vector(768)")
-  
-  // Métadonnées de recherche
-  tags      String[]
-  categories String[]
-  cuisine   String?
-  difficulty String?
-  
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+/// Cache des embeddings pour optimisation (désactivé pour SQLite)
+// model EmbeddingCache {
+//   id        String   @id @default(cuid())
+//   text      String   @unique
+//   embedding Unsupported("vector(768)")
+//   model     String   @default("text-embedding-3-small")
+//   createdAt DateTime @default(now())
 
-  @@index([embedding])
-  @@index([tags])
-  @@index([categories])
-  @@index([cuisine])
-  @@index([difficulty])
-  @@map("recipe_search_index")
-}
+//   @@index([embedding])
+//   @@map("embedding_cache")
+// }
+
+// =============================================================================
+// INDEX VECTORIELS POUR RAG (DÉSACTIVÉS POUR SQLITE)
+// =============================================================================
+
+/// Index pour recherche sémantique de recettes (désactivé pour SQLite)
+// model RecipeSearchIndex {
+//   id        String   @id @default(cuid())
+//   recipeId  String   @unique
+//   recipe    Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+//   
+//   // Texte indexé pour recherche
+//   searchText String  // Titre + description + ingrédients + instructions
+//   embedding  Unsupported("vector(768)")
+//   
+//   // Métadonnées de recherche
+//   tags      String[]
+//   categories String[]
+//   cuisine   String?
+//   difficulty String?
+//   
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   @@index([embedding])
+//   @@index([tags])
+//   @@index([categories])
+//   @@index([cuisine])
+//   @@index([difficulty])
+//   @@map("recipe_search_index")
+// }

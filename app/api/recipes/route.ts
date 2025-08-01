@@ -3,7 +3,7 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { recipeService } from '@/lib/services/recipe-service';
+import { recipeService } from '../../../lib/services/recipe-service';
 import { z } from 'zod';
 
 // =============================================================================
