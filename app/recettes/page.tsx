@@ -17,6 +17,8 @@ import {
   ArrowDown,
   Filter,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
@@ -32,6 +34,7 @@ export default function RecettesPage() {
     category: [] as string[],
   })
   const [showMobileFilters, setShowMobileFilters] = useState(false)
+  const [expandedFilter, setExpandedFilter] = useState<"difficulty" | "category" | null>(null)
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -131,6 +134,10 @@ export default function RecettesPage() {
       setSortBy(criteria)
       setSortOrder("asc")
     }
+  }
+
+  const toggleFilterExpansion = (filterType: "difficulty" | "category") => {
+    setExpandedFilter(expandedFilter === filterType ? null : filterType)
   }
 
   return (
@@ -288,59 +295,110 @@ export default function RecettesPage() {
                 )}
               </div>
 
-              {/* Combined Filter Section */}
+              {/* Compact Filter Section */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center">
                   <Filter className="w-4 h-4 mr-2" />
                   Filtres
                 </h4>
 
-                {/* Difficulty Filters */}
-                <div className="mb-4">
-                  <h5 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Difficulté</h5>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
-                      <Button
-                        key={difficulty}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleFilterChange("difficulty", difficulty)}
-                        className={`transition-all text-xs ${
-                          filters.difficulty.includes(difficulty)
-                            ? "bg-purple-100 border-purple-300 text-purple-700"
-                            : "border-gray-200 hover:bg-purple-50"
-                        }`}
-                      >
-                        {difficulty}
-                        {filters.difficulty.includes(difficulty) && <span className="ml-1 text-purple-500">✓</span>}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
+                {/* Filter Type Buttons */}
+                <div className="space-y-2">
+                  {/* Difficulty Filter Toggle */}
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleFilterExpansion("difficulty")}
+                    className={`w-full justify-between transition-all ${
+                      filters.difficulty.length > 0
+                        ? "bg-purple-50 border-purple-200 text-purple-700"
+                        : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="flex items-center">
+                      Difficulté
+                      {filters.difficulty.length > 0 && (
+                        <span className="ml-2 bg-purple-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {filters.difficulty.length}
+                        </span>
+                      )}
+                    </span>
+                    {expandedFilter === "difficulty" ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
+                    )}
+                  </Button>
 
-                {/* Category Filters */}
-                <div className="mb-4">
-                  <h5 className="text-xs font-medium text-gray-600 mb-2 uppercase tracking-wide">Type de plat</h5>
-                  <div className="grid grid-cols-2 gap-2">
-                    {["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"].map(
-                      (category) => (
+                  {/* Difficulty Options */}
+                  {expandedFilter === "difficulty" && (
+                    <div className="grid grid-cols-2 gap-2 pl-4 animate-fade-in-up">
+                      {["Très facile", "Facile", "Moyen", "Difficile"].map((difficulty) => (
                         <Button
-                          key={category}
+                          key={difficulty}
                           variant="outline"
                           size="sm"
-                          onClick={() => handleFilterChange("category", category)}
+                          onClick={() => handleFilterChange("difficulty", difficulty)}
                           className={`transition-all text-xs ${
-                            filters.category.includes(category)
-                              ? "bg-blue-100 border-blue-300 text-blue-700"
-                              : "border-gray-200 hover:bg-blue-50"
+                            filters.difficulty.includes(difficulty)
+                              ? "bg-purple-100 border-purple-300 text-purple-700"
+                              : "border-gray-200 hover:bg-purple-50"
                           }`}
                         >
-                          {category}
-                          {filters.category.includes(category) && <span className="ml-1 text-blue-500">✓</span>}
+                          {difficulty}
+                          {filters.difficulty.includes(difficulty) && <span className="ml-1 text-purple-500">✓</span>}
                         </Button>
-                      ),
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Category Filter Toggle */}
+                  <Button
+                    variant="outline"
+                    onClick={() => toggleFilterExpansion("category")}
+                    className={`w-full justify-between transition-all ${
+                      filters.category.length > 0
+                        ? "bg-blue-50 border-blue-200 text-blue-700"
+                        : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="flex items-center">
+                      Type de plat
+                      {filters.category.length > 0 && (
+                        <span className="ml-2 bg-blue-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                          {filters.category.length}
+                        </span>
+                      )}
+                    </span>
+                    {expandedFilter === "category" ? (
+                      <ChevronUp className="w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4" />
                     )}
-                  </div>
+                  </Button>
+
+                  {/* Category Options */}
+                  {expandedFilter === "category" && (
+                    <div className="grid grid-cols-2 gap-2 pl-4 animate-fade-in-up">
+                      {["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"].map(
+                        (category) => (
+                          <Button
+                            key={category}
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleFilterChange("category", category)}
+                            className={`transition-all text-xs ${
+                              filters.category.includes(category)
+                                ? "bg-blue-100 border-blue-300 text-blue-700"
+                                : "border-gray-200 hover:bg-blue-50"
+                            }`}
+                          >
+                            {category}
+                            {filters.category.includes(category) && <span className="ml-1 text-blue-500">✓</span>}
+                          </Button>
+                        ),
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Clear Filters Button */}
@@ -349,7 +407,7 @@ export default function RecettesPage() {
                     variant="ghost"
                     size="sm"
                     onClick={clearFilters}
-                    className="text-gray-500 hover:text-gray-700 w-full"
+                    className="text-gray-500 hover:text-gray-700 w-full mt-3"
                   >
                     Effacer tous les filtres
                   </Button>
