@@ -172,7 +172,7 @@ export default function RecettePage({ params }: RecettePageProps) {
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">Recette</h1>
+              <h1 className="text-white font-semibold text-xl">Recette Cookies aux pépites de chocolat    </h1>
             </div>
           </div>
 
