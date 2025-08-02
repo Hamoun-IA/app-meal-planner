@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { ArrowLeft, Send, Sparkles } from "lucide-react"
+import { ArrowLeft, Send, Sparkles, Mic } from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
@@ -17,6 +17,7 @@ export default function AssistantePage() {
       time: "10:30",
     },
   ])
+  const [isRecording, setIsRecording] = useState(false)
 
   const { playBackSound } = useAppSoundsSimple()
 
@@ -48,6 +49,17 @@ export default function AssistantePage() {
       }
       setMessages((prev) => [...prev, botResponse])
     }, 1000)
+  }
+
+  const handleVoiceMessage = () => {
+    setIsRecording(!isRecording)
+    if (!isRecording) {
+      console.log("Démarrage de l'enregistrement vocal...")
+      // Ici on pourrait implémenter la logique d'enregistrement
+    } else {
+      console.log("Arrêt de l'enregistrement vocal...")
+      // Ici on pourrait traiter l'audio enregistré
+    }
   }
 
   return (
@@ -113,6 +125,16 @@ export default function AssistantePage() {
             className="flex-1 rounded-full border-pink-200 focus:border-pink-400"
             onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
           />
+          <Button
+            onClick={handleVoiceMessage}
+            className={`rounded-full transition-all duration-200 ${
+              isRecording
+                ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 animate-pulse"
+                : "bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+            }`}
+          >
+            <Mic className="w-4 h-4" />
+          </Button>
           <Button
             onClick={handleSendMessage}
             className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
