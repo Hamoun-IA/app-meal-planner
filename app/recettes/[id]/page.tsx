@@ -33,7 +33,7 @@ interface RecettePageProps {
 export default function RecettePage({ params }: RecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple();
   const { getRecetteById, deleteRecette, toggleLike } = useRecettes();
-  const { addItems } = useCourses();
+  const { addItemsFromRecipe } = useCourses();
   const { toast } = useToast();
   const router = useRouter();
   const [servings, setServings] = useState(4);
@@ -127,11 +127,9 @@ export default function RecettePage({ params }: RecettePageProps) {
       const allIngredients = ingredients.map(ingredient => ({
         name: ingredient.name,
         quantity: ingredient.quantity,
-        completed: false,
-        source: `Recette: ${recette?.title || "Recette"}`,
       }));
       
-      addItems(allIngredients);
+      addItemsFromRecipe(allIngredients, recette?.title || "Recette");
       
       toast({
         title: "Ingrédients ajoutés ! 🛒",
@@ -143,11 +141,9 @@ export default function RecettePage({ params }: RecettePageProps) {
       const selectedIngredients = checkedIngredients.map(ingredient => ({
         name: ingredient.name,
         quantity: ingredient.quantity,
-        completed: false,
-        source: `Recette: ${recette?.title || "Recette"}`,
       }));
       
-      addItems(selectedIngredients);
+      addItemsFromRecipe(selectedIngredients, recette?.title || "Recette");
       
       toast({
         title: "Ingrédients sélectionnés ajoutés ! 🛒",

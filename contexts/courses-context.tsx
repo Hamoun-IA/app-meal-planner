@@ -3,12 +3,58 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { categorizeIngredient } from "@/lib/ingredient-database";
 
+// Fonction utilitaire pour sauvegarder en localStorage avec gestion d'erreur
+const saveToLocalStorage = (key: string, data: any): boolean => {
+  try {
+    // Vérifier la taille des données avant sauvegarde
+    const dataSize = new Blob([JSON.stringify(data)]).size;
+    const maxSize = 4.5 * 1024 * 1024; // 4.5MB pour être sûr
+    
+    if (dataSize > maxSize) {
+      console.warn(`Données trop volumineuses (${(dataSize / 1024 / 1024).toFixed(2)}MB) pour localStorage`);
+      return false;
+    }
+    
+    localStorage.setItem(key, JSON.stringify(data));
+    return true;
+  } catch (error) {
+    console.error("Erreur lors de la sauvegarde dans localStorage:", error);
+    
+    // Si c'est une erreur de quota, essayer de nettoyer le localStorage
+    if (error instanceof Error && error.name === 'QuotaExceededError') {
+      try {
+        // Supprimer les anciennes données pour libérer de l'espace
+        localStorage.removeItem(key);
+        localStorage.setItem(key, JSON.stringify(data));
+        console.log("Espace libéré et données sauvegardées");
+        return true;
+      } catch (cleanupError) {
+        console.error("Impossible de libérer l'espace localStorage:", cleanupError);
+        return false;
+      }
+    }
+    
+    return false;
+  }
+};
+
+// Fonction utilitaire pour charger depuis localStorage avec gestion d'erreur
+const loadFromLocalStorage = (key: string): any | null => {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : null;
+  } catch (error) {
+    console.error("Erreur lors du chargement depuis localStorage:", error);
+    return null;
+  }
+};
+
 export interface CourseItem {
   id: number;
   name: string;
   completed: boolean;
   category: string;
-  quantity?: string;
+  unit?: string; // Unité de mesure (g, kg, l, ml, unité, etc.) ou vide pour unités simples
   source?: string; // Pour indiquer d'où vient l'article (ex: "Recette: Nom de la recette")
 }
 
@@ -26,6 +72,7 @@ interface CoursesContextType {
   ingredientHistory: IngredientHistory[];
   addItem: (item: Omit<CourseItem, "id">) => void;
   addItems: (items: Omit<CourseItem, "id">[]) => void;
+  addItemsFromRecipe: (ingredients: Array<{ name: string; quantity: string }>, recipeName: string) => void;
   toggleItem: (id: number) => void;
   deleteItem: (id: number) => void;
   updateItem: (id: number, updates: Partial<Omit<CourseItem, "id">>) => void;
@@ -45,6 +92,8 @@ interface CoursesContextType {
   deleteDatabaseItem: (id: number) => void;
   getDatabaseItem: (id: number) => CourseItem | undefined;
   getDatabaseItems: () => CourseItem[];
+  resetDatabaseItems: () => void;
+  cleanIngredientHistory: () => void;
 }
 
 const CoursesContext = createContext<CoursesContextType | undefined>(undefined);
@@ -201,6 +250,18 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
     { id: 5, name: "Yaourts", completed: true, category: "Produits Laitiers" },
   ]);
 
+  // Articles par défaut pour la base de données de gestion
+  const defaultDatabaseItems: CourseItem[] = [
+    { id: 1, name: "Lait", completed: false, category: "Produits Laitiers", unit: "l" },
+    { id: 2, name: "Pain", completed: false, category: "Céréales et Pains", unit: "" }, // Unité simple
+    { id: 3, name: "Pommes", completed: false, category: "Fruits et Légumes", unit: "" }, // Unité simple
+    { id: 4, name: "Yaourt", completed: false, category: "Produits Laitiers", unit: "" }, // Unité simple
+    { id: 5, name: "Poulet", completed: false, category: "Viandes et Poissons", unit: "g" },
+    { id: 6, name: "Riz", completed: false, category: "Céréales et Pains", unit: "kg" },
+    { id: 7, name: "Tomates", completed: false, category: "Fruits et Légumes", unit: "" }, // Unité simple
+    { id: 8, name: "Fromage", completed: false, category: "Produits Laitiers", unit: "g" },
+  ];
+
   // Base de données de gestion (pour la page /courses/gestion) - COMPLÈTEMENT INDÉPENDANTE
   const [databaseItems, setDatabaseItems] = useState<CourseItem[]>([]);
 
@@ -217,40 +278,77 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
 
   const [ingredientHistory, setIngredientHistory] = useState<IngredientHistory[]>([]);
 
+  // Charger les données depuis localStorage au démarrage
   useEffect(() => {
-    const savedItems = localStorage.getItem("courseItems");
-    const savedDatabaseItems = localStorage.getItem("databaseItems");
-    const savedCategories = localStorage.getItem("courseCategories");
-    const savedHistory = localStorage.getItem("ingredientHistory");
+    try {
+      const savedItems = loadFromLocalStorage("courseItems");
+      const savedDatabaseItems = loadFromLocalStorage("babounette-database-items");
+      const savedCategories = loadFromLocalStorage("courseCategories");
+      const savedHistory = loadFromLocalStorage("ingredientHistory");
 
-    if (savedItems) {
-      setItems(JSON.parse(savedItems));
-    }
-    if (savedDatabaseItems) {
-      setDatabaseItems(JSON.parse(savedDatabaseItems));
-    }
-    if (savedCategories) {
-      setCategories(JSON.parse(savedCategories));
-    }
-    if (savedHistory) {
-      setIngredientHistory(JSON.parse(savedHistory));
+      if (savedItems) {
+        setItems(savedItems);
+      }
+      if (savedDatabaseItems) {
+        setDatabaseItems(savedDatabaseItems);
+      } else {
+        // Première utilisation, utiliser les articles par défaut
+        setDatabaseItems(defaultDatabaseItems);
+        saveToLocalStorage("babounette-database-items", defaultDatabaseItems);
+      }
+      if (savedCategories) {
+        setCategories(savedCategories);
+      }
+      if (savedHistory) {
+        setIngredientHistory(savedHistory);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des données:", error);
     }
   }, []);
 
+  // Sauvegarder les items de la liste de courses
   useEffect(() => {
-    localStorage.setItem("courseItems", JSON.stringify(items));
+    if (items.length > 0) {
+      const success = saveToLocalStorage("courseItems", items);
+      if (!success) {
+        console.warn("Impossible de sauvegarder les items de la liste de courses");
+      }
+    }
   }, [items]);
 
+  // Sauvegarder la base de données de gestion
   useEffect(() => {
-    localStorage.setItem("databaseItems", JSON.stringify(databaseItems));
+    if (databaseItems.length > 0) {
+      const success = saveToLocalStorage("babounette-database-items", databaseItems);
+      if (!success) {
+        console.warn("Impossible de sauvegarder la base de données de gestion");
+      }
+    } else {
+      // Si la base de données est vide, supprimer la clé du localStorage
+      localStorage.removeItem("babounette-database-items");
+    }
   }, [databaseItems]);
 
+  // Sauvegarder les catégories
   useEffect(() => {
-    localStorage.setItem("courseCategories", JSON.stringify(categories));
+    const success = saveToLocalStorage("courseCategories", categories);
+    if (!success) {
+      console.warn("Impossible de sauvegarder les catégories");
+    }
   }, [categories]);
 
+  // Sauvegarder l'historique des ingrédients
   useEffect(() => {
-    localStorage.setItem("ingredientHistory", JSON.stringify(ingredientHistory));
+    if (ingredientHistory.length > 0) {
+      const success = saveToLocalStorage("ingredientHistory", ingredientHistory);
+      if (!success) {
+        console.warn("Impossible de sauvegarder l'historique des ingrédients");
+      }
+    } else {
+      // Si l'historique est vide, supprimer la clé du localStorage
+      localStorage.removeItem("ingredientHistory");
+    }
   }, [ingredientHistory]);
 
   const addItem = (item: Omit<CourseItem, "id">) => {
@@ -273,23 +371,22 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
       );
 
       if (existingItemIndex !== -1) {
-        // Fusionner avec l'item existant
-        const existingItem = prev[existingItemIndex];
-        const newQuantity = categorizedItem.quantity && existingItem.quantity 
-          ? addQuantities(existingItem.quantity, categorizedItem.quantity)
-          : categorizedItem.quantity || existingItem.quantity;
+                 // Fusionner avec l'item existant
+         const existingItem = prev[existingItemIndex];
+         // Pour les unités, on garde la première unité rencontrée
+         const newUnit = categorizedItem.unit || existingItem.unit;
         
-        // Fusionner les sources
-        const newSource = existingItem.source && categorizedItem.source
-          ? `${existingItem.source}, ${categorizedItem.source}`
-          : categorizedItem.source || existingItem.source;
+         // Fusionner les sources
+         const newSource = existingItem.source && categorizedItem.source
+           ? `${existingItem.source}, ${categorizedItem.source}`
+           : categorizedItem.source || existingItem.source;
 
-        const updatedItems = [...prev];
-        updatedItems[existingItemIndex] = {
-          ...existingItem,
-          quantity: newQuantity,
-          source: newSource,
-        };
+         const updatedItems = [...prev];
+         updatedItems[existingItemIndex] = {
+           ...existingItem,
+           unit: newUnit,
+           source: newSource,
+         };
         
         return updatedItems;
       } else {
@@ -326,23 +423,22 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
             existing.name.toLowerCase() === categorizedItem.name.toLowerCase()
         );
 
-        if (existingItemIndex !== -1) {
-          // Fusionner avec l'item existant
-          const existingItem = updatedItems[existingItemIndex];
-          const newQuantity = categorizedItem.quantity && existingItem.quantity 
-            ? addQuantities(existingItem.quantity, categorizedItem.quantity)
-            : categorizedItem.quantity || existingItem.quantity;
-          
-          // Fusionner les sources
-          const newSource = existingItem.source && categorizedItem.source
-            ? `${existingItem.source}, ${categorizedItem.source}`
-            : categorizedItem.source || existingItem.source;
+                 if (existingItemIndex !== -1) {
+           // Fusionner avec l'item existant
+           const existingItem = updatedItems[existingItemIndex];
+           // Pour les unités, on garde la première unité rencontrée
+           const newUnit = categorizedItem.unit || existingItem.unit;
+           
+           // Fusionner les sources
+           const newSource = existingItem.source && categorizedItem.source
+             ? `${existingItem.source}, ${categorizedItem.source}`
+             : categorizedItem.source || existingItem.source;
 
-          updatedItems[existingItemIndex] = {
-            ...existingItem,
-            quantity: newQuantity,
-            source: newSource,
-          };
+           updatedItems[existingItemIndex] = {
+             ...existingItem,
+             unit: newUnit,
+             source: newSource,
+           };
         } else {
           // Ajouter un nouvel item
           const itemWithId: CourseItem = {
@@ -355,6 +451,49 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
       
       return updatedItems;
     });
+  };
+
+  const addItemsFromRecipe = (ingredients: Array<{ name: string; quantity: string }>, recipeName: string) => {
+    const convertedItems: Omit<CourseItem, "id">[] = ingredients.map((ingredient) => {
+      // Chercher l'ingrédient dans la base de données de gestion
+      const databaseItem = databaseItems.find(
+        item => item.name.toLowerCase() === ingredient.name.toLowerCase()
+      );
+
+      // Si l'ingrédient existe dans la base de données, utiliser son unité
+      if (databaseItem && databaseItem.unit) {
+        // Parser la quantité de la recette
+        const parsedQuantity = parseQuantity(ingredient.quantity);
+        
+        // Si la quantité a une unité, essayer de la convertir
+        let finalQuantity = ingredient.quantity;
+        if (parsedQuantity.unit && parsedQuantity.unit !== databaseItem.unit) {
+          const converted = convertToCommonUnit(parsedQuantity, databaseItem.unit);
+          if (converted) {
+            finalQuantity = formatQuantity(converted.value, converted.unit);
+          }
+        }
+        
+        return {
+          name: ingredient.name,
+          completed: false,
+          category: databaseItem.category,
+          unit: databaseItem.unit,
+          source: `Recette: ${recipeName} (${finalQuantity})`,
+        };
+      } else {
+        // Si l'ingrédient n'existe pas dans la base de données, utiliser la quantité originale
+        return {
+          name: ingredient.name,
+          completed: false,
+          category: categorizeIngredient(ingredient.name, categories),
+          source: `Recette: ${recipeName} (${ingredient.quantity})`,
+        };
+      }
+    });
+
+    // Ajouter les items convertis
+    addItems(convertedItems);
   };
 
   const toggleItem = (id: number) => {
@@ -470,7 +609,19 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
   };
 
   const deleteDatabaseItem = (id: number) => {
-    setDatabaseItems((prev) => prev.filter((item) => item.id !== id));
+    setDatabaseItems((prev) => {
+      const itemToDelete = prev.find((item) => item.id === id);
+      if (itemToDelete) {
+        // Nettoyer l'historique pour cet article supprimé
+        setIngredientHistory((history) => 
+          history.filter((histItem) => 
+            !(histItem.name.toLowerCase() === itemToDelete.name.toLowerCase() && 
+              histItem.category === itemToDelete.category)
+          )
+        );
+      }
+      return prev.filter((item) => item.id !== id);
+    });
   };
 
   const getDatabaseItem = (id: number) => {
@@ -481,12 +632,39 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
     return databaseItems;
   };
 
+  const resetDatabaseItems = () => {
+    setDatabaseItems(defaultDatabaseItems);
+    saveToLocalStorage("babounette-database-items", defaultDatabaseItems);
+    
+    // Nettoyer l'historique des ingrédients qui ne sont plus dans la base de données
+    setIngredientHistory((history) => {
+      const currentDatabaseNames = defaultDatabaseItems.map(item => 
+        item.name.toLowerCase()
+      );
+      return history.filter((histItem) => 
+        currentDatabaseNames.includes(histItem.name.toLowerCase())
+      );
+    });
+  };
+
+  const cleanIngredientHistory = () => {
+    setIngredientHistory((history) => {
+      const currentDatabaseNames = databaseItems.map(item => 
+        item.name.toLowerCase()
+      );
+      return history.filter((histItem) => 
+        currentDatabaseNames.includes(histItem.name.toLowerCase())
+      );
+    });
+  };
+
   const value: CoursesContextType = {
     items,
     categories,
     ingredientHistory,
     addItem,
     addItems,
+    addItemsFromRecipe,
     toggleItem,
     deleteItem,
     updateItem,
@@ -506,6 +684,8 @@ export const CoursesProvider: React.FC<CoursesProviderProps> = ({ children }) =>
     deleteDatabaseItem,
     getDatabaseItem,
     getDatabaseItems,
+    resetDatabaseItems,
+    cleanIngredientHistory,
   };
 
   return (

@@ -23,11 +23,13 @@ import { IngredientAutocomplete } from "@/components/ui/ingredient-autocomplete"
 
 export default function CoursesPage() {
   const [newItem, setNewItem] = useState("");
+  const [newQuantity, setNewQuantity] = useState("");
   const [newCategory, setNewCategory] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState("");
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [selectedItemCategory, setSelectedItemCategory] = useState<string>("");
+  const [selectedItemUnit, setSelectedItemUnit] = useState<string>("");
 
   const { 
     items, 
@@ -39,7 +41,8 @@ export default function CoursesPage() {
     deleteCategory, 
     updateCategory,
     getCompletedCount,
-    getTotalCount
+    getTotalCount,
+    databaseItems
   } = useCourses();
 
   const { playBackSound, playClickSound } = useAppSoundsSimple();
@@ -53,6 +56,15 @@ export default function CoursesPage() {
 
   const handleSelectWithCategory = (name: string, category: string) => {
     setSelectedItemCategory(category);
+    
+    // Récupérer l'unité depuis la base de données de gestion
+    const databaseItem = databaseItems.find(
+      item => item.name.toLowerCase() === name.toLowerCase()
+    );
+    if (databaseItem) {
+      setSelectedItemUnit(databaseItem.unit || "");
+    }
+    
     // Le menu se ferme automatiquement grâce au composant IngredientAutocomplete
   };
 
@@ -70,13 +82,25 @@ export default function CoursesPage() {
       category = existingSuggestion ? existingSuggestion.category : "";
     }
     
+    // Construire la quantité avec l'unité si disponible
+    let displayQuantity = "";
+    if (newQuantity.trim() && selectedItemUnit) {
+      displayQuantity = `${newQuantity.trim()}${selectedItemUnit}`;
+    } else if (selectedItemUnit) {
+      displayQuantity = `1${selectedItemUnit}`;
+    }
+    
     addItem({
       name: newItem,
       completed: false,
       category: category,
+      unit: selectedItemUnit || undefined,
+      source: displayQuantity ? `Quantité: ${displayQuantity}` : undefined,
     });
     setNewItem("");
+    setNewQuantity("");
     setSelectedItemCategory("");
+    setSelectedItemUnit("");
   };
 
   const handleToggleItem = (id: number) => {
@@ -324,6 +348,25 @@ export default function CoursesPage() {
               </p>
             </div>
             
+            {/* Champ de quantité avec unité */}
+            {selectedItemUnit && (
+              <div className="flex items-center space-x-3">
+                <label className="text-sm font-medium text-gray-700 min-w-fit">
+                  Quantité :
+                </label>
+                <Input
+                  value={newQuantity}
+                  onChange={(e) => setNewQuantity(e.target.value)}
+                  placeholder={`Quantité en ${selectedItemUnit}...`}
+                  className="flex-1 border-pink-200 focus:border-pink-400"
+                  onKeyPress={(e) => e.key === "Enter" && handleAddItem()}
+                />
+                <span className="text-sm text-gray-500 min-w-fit">
+                  {selectedItemUnit}
+                </span>
+              </div>
+            )}
+            
             {/* Bouton d'ajout */}
             <Button
               onClick={handleAddItem}
@@ -374,23 +417,35 @@ export default function CoursesPage() {
                       />
                       
                       <div className="flex-1">
-                          <div className="flex items-center flex-wrap gap-1">
+                          <div className="flex items-center flex-wrap gap-2">
                             <span className="text-gray-800">
                               {item.name}
                             </span>
-                            {item.quantity && (
-                              <span className="text-sm text-pink-600 font-medium">
-                                {item.quantity}
+                            {item.source && item.source.startsWith("Quantité:") && (
+                              <span className="inline-block bg-pink-100 text-pink-800 px-2 py-1 rounded-full text-sm font-medium">
+                                {item.source.replace("Quantité: ", "")}
+                              </span>
+                            )}
+                            {item.source && item.source.startsWith("Recette:") && item.source.includes("(") && item.source.includes(")") && (
+                              <span className="inline-block bg-pink-100 text-pink-800 px-2 py-1 rounded-full text-sm font-medium">
+                                {item.source.match(/\(([^)]+)\)/)?.[1] || ""}
                               </span>
                             )}
                           </div>
-                          {item.source && (
+                          {item.source && !item.source.startsWith("Quantité:") && !item.source.startsWith("Recette:") && (
                             <div className="text-xs text-gray-400 mt-1">
                               {item.source.split(', ').map((source, index) => (
                                 <span key={index} className="inline-block bg-gray-100 rounded px-1 mr-1 mb-1">
                                   {source}
                                 </span>
                               ))}
+                            </div>
+                          )}
+                          {item.source && item.source.startsWith("Recette:") && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              <span className="inline-block bg-gray-100 rounded px-1 mr-1 mb-1">
+                                {item.source.replace(/\([^)]+\)/, "").trim()}
+                              </span>
                             </div>
                           )}
                         </div>

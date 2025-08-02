@@ -22,13 +22,14 @@ import { IngredientAutocomplete } from "@/components/ui/ingredient-autocomplete"
 export default function GestionCoursesPage() {
   const [newItem, setNewItem] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Divers");
+  const [selectedUnit, setSelectedUnit] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("Toutes");
   
   // États pour l'édition des items
   const [editingItem, setEditingItem] = useState<number | null>(null);
   const [editItemName, setEditItemName] = useState("");
-  const [editItemQuantity, setEditItemQuantity] = useState("");
+  const [editItemUnit, setEditItemUnit] = useState("");
   const [editItemCategory, setEditItemCategory] = useState("");
 
   const { 
@@ -39,7 +40,9 @@ export default function GestionCoursesPage() {
     updateDatabaseItem,
     getDatabaseItem,
     getCompletedCount,
-    getTotalCount
+    getTotalCount,
+    resetDatabaseItems,
+    cleanIngredientHistory
   } = useCourses();
 
   const { playBackSound, playClickSound } = useAppSoundsSimple();
@@ -57,8 +60,10 @@ export default function GestionCoursesPage() {
       name: newItem,
       completed: false,
       category: selectedCategory,
+      unit: selectedUnit || undefined,
     });
     setNewItem("");
+    setSelectedUnit("");
   };
 
   // Fonctions CRUD pour les items
@@ -68,7 +73,7 @@ export default function GestionCoursesPage() {
       playClickSound();
       setEditingItem(id);
       setEditItemName(item.name);
-      setEditItemQuantity(item.quantity || "");
+      setEditItemUnit(item.unit || "");
       setEditItemCategory(item.category);
     }
   };
@@ -82,13 +87,13 @@ export default function GestionCoursesPage() {
     playClickSound();
     updateDatabaseItem(editingItem, {
       name: editItemName.trim(),
-      quantity: editItemQuantity.trim() || undefined,
+      unit: editItemUnit.trim() || undefined,
       category: editItemCategory,
     });
 
     setEditingItem(null);
     setEditItemName("");
-    setEditItemQuantity("");
+    setEditItemUnit("");
     setEditItemCategory("");
   };
 
@@ -96,13 +101,27 @@ export default function GestionCoursesPage() {
     playClickSound();
     setEditingItem(null);
     setEditItemName("");
-    setEditItemQuantity("");
+    setEditItemUnit("");
     setEditItemCategory("");
   };
 
   const handleDeleteItem = (id: number) => {
     playClickSound();
     deleteDatabaseItem(id);
+  };
+
+  const handleResetDatabase = () => {
+    playClickSound();
+    if (confirm("Êtes-vous sûr de vouloir réinitialiser la base de données ? Cela remplacera tous les articles par les articles par défaut.")) {
+      resetDatabaseItems();
+    }
+  };
+
+  const handleCleanHistory = () => {
+    playClickSound();
+    if (confirm("Nettoyer l'historique des ingrédients ? Cela supprimera les suggestions d'articles qui ne sont plus dans la base de données.")) {
+      cleanIngredientHistory();
+    }
   };
 
   // Filtrage des items - Afficher TOUS les items dans la page de gestion
@@ -165,42 +184,95 @@ export default function GestionCoursesPage() {
               />
             </div>
             
-            {/* Sélecteur de catégorie */}
-            <div className="flex items-center space-x-3">
-              <label className="text-sm font-medium text-gray-700 min-w-fit">
-                Catégorie :
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => {
-                  playClickSound();
-                  setSelectedCategory(e.target.value);
-                }}
-                className="flex-1 px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white"
-              >
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-              <Button
-                onClick={handleAddItem}
-                className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 px-6"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter
-              </Button>
-            </div>
+                         {/* Sélecteurs de catégorie et unité */}
+             <div className="flex items-center space-x-3">
+               <label className="text-sm font-medium text-gray-700 min-w-fit">
+                 Catégorie :
+               </label>
+               <select
+                 value={selectedCategory}
+                 onChange={(e) => {
+                   playClickSound();
+                   setSelectedCategory(e.target.value);
+                 }}
+                 className="flex-1 px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white"
+               >
+                 {categories.map((category) => (
+                   <option key={category} value={category}>
+                     {category}
+                   </option>
+                 ))}
+               </select>
+               <label className="text-sm font-medium text-gray-700 min-w-fit">
+                 Unité :
+               </label>
+               <select
+                 value={selectedUnit}
+                 onChange={(e) => {
+                   playClickSound();
+                   setSelectedUnit(e.target.value);
+                 }}
+                 className="flex-1 px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white"
+               >
+                 <option value="">Aucune unité</option>
+                 <optgroup label="Poids">
+                   <option value="g">Grammes (g)</option>
+                   <option value="kg">Kilogrammes (kg)</option>
+                 </optgroup>
+                 <optgroup label="Volumes">
+                   <option value="ml">Millilitres (ml)</option>
+                   <option value="cl">Centilitres (cl)</option>
+                   <option value="l">Litres (l)</option>
+                 </optgroup>
+                 <optgroup label="Cuisine">
+                   <option value="tasse">Tasse</option>
+                   <option value="cuillère">Cuillère</option>
+                   <option value="pincée">Pincée</option>
+                 </optgroup>
+                 <optgroup label="Autres">
+                   <option value="sachet">Sachet</option>
+                   <option value="botte">Botte</option>
+                   <option value="tranche">Tranche</option>
+                   <option value="unité">Unité</option>
+                 </optgroup>
+               </select>
+               <Button
+                 onClick={handleAddItem}
+                 className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 px-6"
+               >
+                 <Plus className="w-4 h-4 mr-2" />
+                 Ajouter
+               </Button>
+             </div>
           </div>
         </div>
 
         {/* Filters Section */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-fade-in-up">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-            <Filter className="w-5 h-5 mr-2" />
-            Filtres
-          </h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-800 flex items-center">
+              <Filter className="w-5 h-5 mr-2" />
+              Filtres
+            </h2>
+            <div className="flex space-x-2">
+              <Button
+                onClick={handleCleanHistory}
+                variant="outline"
+                className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                Nettoyer
+              </Button>
+              <Button
+                onClick={handleResetDatabase}
+                variant="outline"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Réinitialiser
+              </Button>
+            </div>
+          </div>
           <div className="flex flex-wrap gap-4">
             <div className="flex-1 min-w-64">
               <label className="block text-sm font-medium text-gray-700 mb-2">Recherche</label>
@@ -249,9 +321,9 @@ export default function GestionCoursesPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Nom</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Quantité</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700">Catégorie</th>
+                                         <th className="text-left py-3 px-4 font-medium text-gray-700">Nom</th>
+                     <th className="text-left py-3 px-4 font-medium text-gray-700">Unité</th>
+                     <th className="text-left py-3 px-4 font-medium text-gray-700">Catégorie</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Source</th>
                     <th className="text-left py-3 px-4 font-medium text-gray-700">Actions</th>
                   </tr>
@@ -277,18 +349,39 @@ export default function GestionCoursesPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4">
-                        {editingItem === item.id ? (
-                          <Input
-                            value={editItemQuantity}
-                            onChange={(e) => setEditItemQuantity(e.target.value)}
-                            placeholder="Quantité"
-                            className="border-pink-200 focus:border-pink-400"
-                          />
-                        ) : (
-                          <span className="text-gray-600">{item.quantity || "-"}</span>
-                        )}
-                      </td>
+                                             <td className="py-3 px-4">
+                         {editingItem === item.id ? (
+                           <select
+                             value={editItemUnit}
+                             onChange={(e) => setEditItemUnit(e.target.value)}
+                             className="border border-pink-200 rounded focus:border-pink-400 focus:outline-none bg-white"
+                           >
+                             <option value="">Aucune unité</option>
+                             <optgroup label="Poids">
+                               <option value="g">Grammes (g)</option>
+                               <option value="kg">Kilogrammes (kg)</option>
+                             </optgroup>
+                             <optgroup label="Volumes">
+                               <option value="ml">Millilitres (ml)</option>
+                               <option value="cl">Centilitres (cl)</option>
+                               <option value="l">Litres (l)</option>
+                             </optgroup>
+                             <optgroup label="Cuisine">
+                               <option value="tasse">Tasse</option>
+                               <option value="cuillère">Cuillère</option>
+                               <option value="pincée">Pincée</option>
+                             </optgroup>
+                             <optgroup label="Autres">
+                               <option value="sachet">Sachet</option>
+                               <option value="botte">Botte</option>
+                               <option value="tranche">Tranche</option>
+                               <option value="unité">Unité</option>
+                             </optgroup>
+                           </select>
+                         ) : (
+                           <span className="text-gray-600">{item.unit || "-"}</span>
+                         )}
+                       </td>
                       <td className="py-3 px-4">
                         {editingItem === item.id ? (
                           <select
