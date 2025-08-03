@@ -42,10 +42,27 @@ export async function generateRecipeEmbedding(recipe: {
 export async function generateIngredientEmbedding(ingredient: {
   name: string
   category?: string
+  categoryId?: string
 }): Promise<string> {
+  let categoryName = ingredient.category
+  
+  // Si on a un categoryId mais pas de category, récupérer le nom de la catégorie
+  if (ingredient.categoryId && !ingredient.category) {
+    try {
+      const { prisma } = await import('@/lib/db/prisma')
+      const category = await prisma.category.findUnique({
+        where: { id: ingredient.categoryId },
+        select: { name: true }
+      })
+      categoryName = category?.name
+    } catch (error) {
+      console.warn('Impossible de récupérer le nom de la catégorie:', error)
+    }
+  }
+
   const text = `
     Ingrédient: ${ingredient.name}
-    ${ingredient.category ? `Catégorie: ${ingredient.category}` : ''}
+    ${categoryName ? `Catégorie: ${categoryName}` : ''}
   `.trim()
   
   return generateEmbedding(text)

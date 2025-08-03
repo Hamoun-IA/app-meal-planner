@@ -372,20 +372,46 @@ export class RecipeService {
       })
     }
 
-    return await prisma.recipe.update({
-      where: { id },
-      data: {
-        name: data.name,
-        prepTime: updateData.prepTime,
-        cookTime: updateData.cookTime,
-        difficulty: data.difficulty,
-        dishType: data.dishType,
-        instructions: data.instructions,
-        tips: data.tips,
-        imageUrl: data.imageUrl,
-        servings: data.servings,
-        embedding,
-      },
+    // Mettre à jour la recette avec transaction pour gérer les ingrédients
+    return await prisma.$transaction(async (tx) => {
+      // Mettre à jour la recette
+      const updatedRecipe = await tx.recipe.update({
+        where: { id },
+        data: {
+          name: data.name,
+          prepTime: updateData.prepTime,
+          cookTime: updateData.cookTime,
+          difficulty: data.difficulty,
+          dishType: data.dishType,
+          instructions: data.instructions,
+          tips: data.tips,
+          imageUrl: data.imageUrl,
+          servings: data.servings,
+          embedding,
+        },
+      })
+
+      // Mettre à jour les ingrédients si fournis
+      if (data.ingredients) {
+        // Supprimer tous les ingrédients existants
+        await tx.recipeIngredient.deleteMany({
+          where: { recipeId: id }
+        })
+
+        // Ajouter les nouveaux ingrédients
+        if (data.ingredients.length > 0) {
+          await tx.recipeIngredient.createMany({
+            data: data.ingredients.map(ing => ({
+              recipeId: id,
+              ingredientId: ing.ingredientId,
+              quantity: ing.quantity,
+              unit: ing.unit,
+            }))
+          })
+        }
+      }
+
+      return updatedRecipe
     })
   }
 

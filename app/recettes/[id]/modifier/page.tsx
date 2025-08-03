@@ -203,10 +203,17 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
       return
     }
 
-    // Vérifier qu'il y a au moins un ingrédient
-    const validIngredients = recette.ingredients.filter(ing => ing.ingredientId)
+    // Vérifier qu'il y a au moins un ingrédient valide
+    const validIngredients = recette.ingredients.filter(ing => ing.ingredientId && ing.ingredientId.trim() !== "")
     if (validIngredients.length === 0) {
-      alert("Au moins un ingrédient est requis !")
+      alert("Au moins un ingrédient est requis ! Veuillez sélectionner un ingrédient pour chaque ligne.")
+      return
+    }
+
+    // Vérifier que tous les ingrédients ont un ingredientId valide
+    const invalidIngredients = recette.ingredients.filter(ing => !ing.ingredientId || ing.ingredientId.trim() === "")
+    if (invalidIngredients.length > 0) {
+      alert("Certains ingrédients n'ont pas été sélectionnés. Veuillez choisir un ingrédient pour chaque ligne ou supprimer les lignes vides.")
       return
     }
 

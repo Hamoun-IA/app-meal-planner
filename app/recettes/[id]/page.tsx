@@ -23,6 +23,7 @@ import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 import { useRecettes } from "@/contexts/recettes-context"
 import { useRouter } from "next/navigation"
 import { apiService } from "@/lib/services/api-service"
+import { shoppingListService } from "@/lib/services/shopping-list-service"
 
 interface RecettePageProps {
   params: Promise<{
@@ -158,6 +159,31 @@ export default function RecettePage({ params }: RecettePageProps) {
       ...ingredient,
       quantity: calculateAdjustedQuantity(ingredient.originalQuantity, newServings, originalServings)
     })))
+  }
+
+  const handleAddToShoppingList = () => {
+    playClickSound()
+    
+    // Filtrer seulement les ingrédients cochés
+    const checkedIngredients = ingredients.filter(ingredient => ingredient.checked)
+    
+    if (checkedIngredients.length === 0) {
+      alert('Veuillez cocher au moins un ingrédient à ajouter à votre liste de courses.')
+      return
+    }
+    
+    // Ajouter les ingrédients cochés à la liste de courses
+    shoppingListService.addItemsFromRecipe(
+      checkedIngredients.map(ing => ({
+        name: ing.name,
+        quantity: ing.quantity,
+        unit: ing.unit
+      })),
+      recette.name
+    )
+    
+    // Afficher une confirmation
+    alert(`${checkedIngredients.length} ingrédient${checkedIngredients.length > 1 ? 's' : ''} ajouté${checkedIngredients.length > 1 ? 's' : ''} à votre liste de courses !`)
   }
 
   // État de chargement
@@ -534,7 +560,10 @@ export default function RecettePage({ params }: RecettePageProps) {
         {/* Action Buttons */}
         <div className="bg-white rounded-2xl shadow-lg p-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600">
+            <Button 
+              onClick={handleAddToShoppingList}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+            >
               <Plus className="w-4 h-4 mr-2" />
               Ajouter à ma liste de courses
             </Button>

@@ -3,21 +3,32 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import Link from "next/link"
-import { ArrowLeft, Plus, Edit2, Trash2, Search, Package, Filter, X, Check, Settings } from "lucide-react"
-import { useState } from "react"
+import { ArrowLeft, Plus, Edit2, Trash2, Search, Package, Filter, X, Check, Settings, AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 import { useProduits } from "@/contexts/produits-context"
+import { useToast } from "@/hooks/use-toast"
+import { cleanupLocalStorage, checkLocalStorageData } from "@/lib/utils/cleanup-localStorage"
+
+interface Category {
+  id: string
+  name: string
+}
 
 export default function GestionProduitsPage() {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { produits, addProduit, updateProduit, deleteProduit, isLoading } = useProduits()
+  const { produits, addProduit, updateProduit, deleteProduit, isLoading, error, refreshProduits } = useProduits()
+  const { toast } = useToast()
 
   const [searchTerm, setSearchTerm] = useState("")
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
-  const [editingProduit, setEditingProduit] = useState<number | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+  const [editingProduit, setEditingProduit] = useState<string | null>(null)
   const [filterCategory, setFilterCategory] = useState("")
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [categoriesLoading, setCategoriesLoading] = useState(true)
 
   const [formData, setFormData] = useState({
     nom: "",
@@ -25,20 +36,45 @@ export default function GestionProduitsPage() {
     typeQuantite: "",
   })
 
-  const categories = [
-    "Produits laitiers",
-    "Boulangerie",
-    "Fruits & Légumes",
-    "Épicerie sucrée",
-    "Viande & Poisson",
-    "Surgelés",
-    "Boissons",
-    "Hygiène & Beauté",
-    "Entretien",
-    "Divers",
-  ]
-
   const typesQuantite = ["Unité", "Gramme", "Kilogramme", "Litre", "Millilitre", "Paquet", "Boîte", "Sachet"]
+
+  // Nettoyer le localStorage au chargement de la page
+  useEffect(() => {
+    cleanupLocalStorage()
+    
+    // Vérifier s'il reste des données (pour debug)
+    const remainingKeys = checkLocalStorageData()
+    if (remainingKeys.length > 0) {
+      console.log('⚠️ Données restantes dans localStorage:', remainingKeys)
+    }
+  }, [])
+
+  // Charger les catégories depuis l'API
+  const loadCategories = async () => {
+    try {
+      setCategoriesLoading(true)
+      const response = await fetch('/api/shopping-items/categories')
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des catégories')
+      }
+      const result = await response.json()
+      setCategories(result.data)
+    } catch (error) {
+      console.error('Erreur lors du chargement des catégories:', error)
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les catégories",
+        variant: "destructive",
+      })
+    } finally {
+      setCategoriesLoading(false)
+    }
+  }
+
+  // Charger les catégories au démarrage
+  useEffect(() => {
+    loadCategories()
+  }, [])
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -53,25 +89,44 @@ export default function GestionProduitsPage() {
     })
   }
 
-  const handleAddProduit = () => {
+  const handleAddProduit = async () => {
     playClickSound()
 
     if (!formData.nom.trim() || !formData.categorie || !formData.typeQuantite) {
-      alert("Tous les champs sont obligatoires !")
+      toast({
+        title: "Erreur",
+        description: "Tous les champs sont obligatoires !",
+        variant: "destructive",
+      })
       return
     }
 
-    addProduit({
-      nom: formData.nom.trim(),
-      categorie: formData.categorie,
-      typeQuantite: formData.typeQuantite,
-    })
+    try {
+      setIsSubmitting(true)
+      await addProduit({
+        nom: formData.nom.trim(),
+        categorie: formData.categorie,
+        typeQuantite: formData.typeQuantite,
+      })
 
-    resetForm()
-    setShowAddModal(false)
+      resetForm()
+      setShowAddModal(false)
+      toast({
+        title: "Succès",
+        description: "Produit ajouté avec succès !",
+      })
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible d'ajouter le produit",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleEditProduit = (id: number) => {
+  const handleEditProduit = (id: string) => {
     playClickSound()
     const produit = produits.find((p) => p.id === id)
     if (produit) {
@@ -85,29 +140,63 @@ export default function GestionProduitsPage() {
     }
   }
 
-  const handleUpdateProduit = () => {
+  const handleUpdateProduit = async () => {
     playClickSound()
 
     if (!formData.nom.trim() || !formData.categorie || !formData.typeQuantite || !editingProduit) {
-      alert("Tous les champs sont obligatoires !")
+      toast({
+        title: "Erreur",
+        description: "Tous les champs sont obligatoires !",
+        variant: "destructive",
+      })
       return
     }
 
-    updateProduit(editingProduit, {
-      nom: formData.nom.trim(),
-      categorie: formData.categorie,
-      typeQuantite: formData.typeQuantite,
-    })
+    try {
+      setIsSubmitting(true)
+      await updateProduit(editingProduit, {
+        nom: formData.nom.trim(),
+        categorie: formData.categorie,
+        typeQuantite: formData.typeQuantite,
+      })
 
-    resetForm()
-    setShowEditModal(false)
-    setEditingProduit(null)
+      resetForm()
+      setShowEditModal(false)
+      setEditingProduit(null)
+      toast({
+        title: "Succès",
+        description: "Produit modifié avec succès !",
+      })
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de modifier le produit",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const handleDeleteProduit = (id: number) => {
+  const handleDeleteProduit = async (id: string) => {
     playClickSound()
-    deleteProduit(id)
-    setShowDeleteConfirm(null)
+    try {
+      setIsSubmitting(true)
+      await deleteProduit(id)
+      setShowDeleteConfirm(null)
+      toast({
+        title: "Succès",
+        description: "Produit supprimé avec succès !",
+      })
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Impossible de supprimer le produit",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const openAddModal = () => {
@@ -137,6 +226,22 @@ export default function GestionProduitsPage() {
       <div className="absolute top-20 left-20 w-12 h-12 bg-pink-200/30 rounded-full blur-xl animate-float-slow"></div>
       <div className="absolute top-40 right-32 w-8 h-8 bg-rose-200/40 rounded-full blur-lg animate-float-medium delay-1000"></div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-red-500 text-white p-4 flex items-center justify-center">
+          <AlertCircle className="w-5 h-5 mr-2" />
+          <span>{error}</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => refreshProduits()}
+            className="ml-4 text-white hover:bg-red-600"
+          >
+            Réessayer
+          </Button>
+        </div>
+      )}
+
       {/* Add Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -156,6 +261,7 @@ export default function GestionProduitsPage() {
                   onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                   placeholder="Ex: Lait"
                   className="border-pink-200 focus:border-pink-400"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -165,11 +271,14 @@ export default function GestionProduitsPage() {
                   value={formData.categorie}
                   onChange={(e) => setFormData({ ...formData, categorie: e.target.value })}
                   className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                  disabled={isSubmitting || categoriesLoading}
                 >
-                  <option value="">Choisir une catégorie</option>
+                  <option value="">
+                    {categoriesLoading ? "Chargement des catégories..." : "Choisir une catégorie"}
+                  </option>
                   {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -181,6 +290,7 @@ export default function GestionProduitsPage() {
                   value={formData.typeQuantite}
                   onChange={(e) => setFormData({ ...formData, typeQuantite: e.target.value })}
                   className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                  disabled={isSubmitting}
                 >
                   <option value="">Choisir un type</option>
                   {typesQuantite.map((type) => (
@@ -197,15 +307,26 @@ export default function GestionProduitsPage() {
                 variant="outline"
                 onClick={closeModals}
                 className="flex-1 border-gray-200 hover:bg-gray-50 bg-transparent"
+                disabled={isSubmitting}
               >
                 Annuler
               </Button>
               <Button
                 onClick={handleAddProduit}
                 className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+                disabled={isSubmitting}
               >
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter
+                {isSubmitting ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Ajout...
+                  </div>
+                ) : (
+                  <>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -231,6 +352,7 @@ export default function GestionProduitsPage() {
                   onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
                   placeholder="Ex: Lait"
                   className="border-pink-200 focus:border-pink-400"
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -240,11 +362,14 @@ export default function GestionProduitsPage() {
                   value={formData.categorie}
                   onChange={(e) => setFormData({ ...formData, categorie: e.target.value })}
                   className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                  disabled={isSubmitting || categoriesLoading}
                 >
-                  <option value="">Choisir une catégorie</option>
+                  <option value="">
+                    {categoriesLoading ? "Chargement des catégories..." : "Choisir une catégorie"}
+                  </option>
                   {categories.map((cat) => (
-                    <option key={cat} value={cat}>
-                      {cat}
+                    <option key={cat.id} value={cat.name}>
+                      {cat.name}
                     </option>
                   ))}
                 </select>
@@ -256,6 +381,7 @@ export default function GestionProduitsPage() {
                   value={formData.typeQuantite}
                   onChange={(e) => setFormData({ ...formData, typeQuantite: e.target.value })}
                   className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                  disabled={isSubmitting}
                 >
                   <option value="">Choisir un type</option>
                   {typesQuantite.map((type) => (
@@ -272,15 +398,26 @@ export default function GestionProduitsPage() {
                 variant="outline"
                 onClick={closeModals}
                 className="flex-1 border-gray-200 hover:bg-gray-50 bg-transparent"
+                disabled={isSubmitting}
               >
                 Annuler
               </Button>
               <Button
                 onClick={handleUpdateProduit}
                 className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                disabled={isSubmitting}
               >
-                <Check className="w-4 h-4 mr-2" />
-                Modifier
+                {isSubmitting ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Modification...
+                  </div>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4 mr-2" />
+                    Modifier
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -307,14 +444,23 @@ export default function GestionProduitsPage() {
                     setShowDeleteConfirm(null)
                   }}
                   className="flex-1 border-gray-200 hover:bg-gray-50"
+                  disabled={isSubmitting}
                 >
                   Annuler
                 </Button>
                 <Button
                   onClick={() => handleDeleteProduit(showDeleteConfirm)}
                   className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                  disabled={isSubmitting}
                 >
-                  Supprimer
+                  {isSubmitting ? (
+                    <div className="flex items-center">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Suppression...
+                    </div>
+                  ) : (
+                    "Supprimer"
+                  )}
                 </Button>
               </div>
             </div>
@@ -342,7 +488,7 @@ export default function GestionProduitsPage() {
               <div>
                 <h1 className="text-white font-semibold text-xl">Gestion des produits</h1>
                 <p className="text-white/80 text-sm">
-                  {produits.length} produit{produits.length > 1 ? "s" : ""} enregistré{produits.length > 1 ? "s" : ""}
+                  {isLoading ? "Chargement..." : `${produits.length} produit${produits.length > 1 ? "s" : ""} enregistré${produits.length > 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>
@@ -351,6 +497,7 @@ export default function GestionProduitsPage() {
           <Button
             onClick={openAddModal}
             className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+            disabled={isLoading}
           >
             <Plus className="w-4 h-4 mr-2" />
             Ajouter un produit
@@ -369,6 +516,7 @@ export default function GestionProduitsPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Rechercher un produit... 🔍"
                 className="pl-10 rounded-full border-pink-200 focus:border-pink-400"
+                disabled={isLoading}
               />
             </div>
             <div className="flex items-center space-x-3">
@@ -380,11 +528,12 @@ export default function GestionProduitsPage() {
                   setFilterCategory(e.target.value)
                 }}
                 className="px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white min-w-[200px]"
+                disabled={isLoading || categoriesLoading}
               >
                 <option value="">Toutes les catégories</option>
                 {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
+                  <option key={category.id} value={category.name}>
+                    {category.name}
                   </option>
                 ))}
               </select>
@@ -410,69 +559,78 @@ export default function GestionProduitsPage() {
           className="bg-white rounded-2xl shadow-lg overflow-hidden animate-fade-in-up"
           style={{ animationDelay: "0.1s" }}
         >
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gradient-to-r from-pink-100 to-rose-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Produit</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Catégorie</th>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Type de quantité</th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-gray-800">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filteredProduits.map((produit, index) => (
-                  <tr
-                    key={produit.id}
-                    className="hover:bg-pink-25 transition-colors animate-fade-in-up"
-                    style={{ animationDelay: `${index * 0.05}s` }}
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full flex items-center justify-center">
-                          <Package className="w-4 h-4 text-white" />
-                        </div>
-                        <span className="font-medium text-gray-800">{produit.nom}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-100 text-pink-700">
-                        {produit.categorie}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-gray-600 font-medium">{produit.typeQuantite}</span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditProduit(produit.id)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            playClickSound()
-                            setShowDeleteConfirm(produit.id)
-                          }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </td>
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Chargement des produits...</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-pink-100 to-rose-100">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Produit</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Catégorie</th>
+                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Type de quantité</th>
+                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-800">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {filteredProduits.map((produit, index) => (
+                    <tr
+                      key={produit.id}
+                      className="hover:bg-pink-25 transition-colors animate-fade-in-up"
+                      style={{ animationDelay: `${index * 0.05}s` }}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full flex items-center justify-center">
+                            <Package className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="font-medium text-gray-800">{produit.nom}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-100 text-pink-700">
+                          {produit.categorie}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-gray-600 font-medium">{produit.typeQuantite}</span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditProduit(produit.id)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2"
+                            disabled={isSubmitting}
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              playClickSound()
+                              setShowDeleteConfirm(produit.id)
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
+                            disabled={isSubmitting}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
-          {filteredProduits.length === 0 && (
+          {!isLoading && filteredProduits.length === 0 && (
             <div className="text-center py-12">
               <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
               <p className="text-gray-600 text-lg">Aucun produit trouvé 📦</p>
@@ -493,7 +651,7 @@ export default function GestionProduitsPage() {
         </div>
 
         {/* Stats */}
-        {filteredProduits.length > 0 && (
+        {!isLoading && filteredProduits.length > 0 && (
           <div
             className="bg-white rounded-2xl shadow-lg p-6 mt-6 animate-fade-in-up"
             style={{ animationDelay: "0.2s" }}

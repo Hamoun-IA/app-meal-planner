@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 
 export interface Produit {
-  id: number
+  id: string
   nom: string
   categorie: string
   typeQuantite: string
@@ -13,125 +13,172 @@ export interface Produit {
 
 interface ProduitsContextType {
   produits: Produit[]
-  addProduit: (produit: Omit<Produit, "id" | "createdAt" | "updatedAt">) => void
-  updateProduit: (id: number, produit: Partial<Produit>) => void
-  deleteProduit: (id: number) => void
-  getProduitById: (id: number) => Produit | undefined
+  addProduit: (produit: Omit<Produit, "id" | "createdAt" | "updatedAt">) => Promise<void>
+  updateProduit: (id: string, produit: Partial<Produit>) => Promise<void>
+  deleteProduit: (id: string) => Promise<void>
+  getProduitById: (id: string) => Produit | undefined
   isLoading: boolean
+  error: string | null
+  refreshProduits: () => Promise<void>
 }
 
 const ProduitsContext = createContext<ProduitsContextType | undefined>(undefined)
 
-const defaultProduits: Produit[] = [
-  {
-    id: 1,
-    nom: "Lait",
-    categorie: "Produits laitiers",
-    typeQuantite: "Litre",
-    createdAt: "2024-01-10T10:00:00Z",
-    updatedAt: "2024-01-10T10:00:00Z",
-  },
-  {
-    id: 2,
-    nom: "Pain",
-    categorie: "Boulangerie",
-    typeQuantite: "Unité",
-    createdAt: "2024-01-11T09:30:00Z",
-    updatedAt: "2024-01-11T09:30:00Z",
-  },
-  {
-    id: 3,
-    nom: "Pommes",
-    categorie: "Fruits & Légumes",
-    typeQuantite: "Kilogramme",
-    createdAt: "2024-01-12T14:15:00Z",
-    updatedAt: "2024-01-12T14:15:00Z",
-  },
-  {
-    id: 4,
-    nom: "Chocolat",
-    categorie: "Épicerie sucrée",
-    typeQuantite: "Gramme",
-    createdAt: "2024-01-13T16:45:00Z",
-    updatedAt: "2024-01-13T16:45:00Z",
-  },
-  {
-    id: 5,
-    nom: "Yaourts",
-    categorie: "Produits laitiers",
-    typeQuantite: "Unité",
-    createdAt: "2024-01-14T11:20:00Z",
-    updatedAt: "2024-01-14T11:20:00Z",
-  },
-  {
-    id: 6,
-    nom: "Saumon",
-    categorie: "Viande & Poisson",
-    typeQuantite: "Gramme",
-    createdAt: "2024-01-15T13:10:00Z",
-    updatedAt: "2024-01-15T13:10:00Z",
-  },
-]
+// Fonction pour convertir ShoppingItem API response en Produit
+const convertShoppingItemToProduit = (item: any): Produit => {
+  return {
+    id: item.id,
+    nom: item.name,
+    categorie: item.category?.name || "Autres",
+    typeQuantite: "Unité", // Valeur par défaut car ShoppingItem n'a pas de typeQuantite
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
+  }
+}
 
 export function ProduitsProvider({ children }: { children: ReactNode }) {
   const [produits, setProduits] = useState<Produit[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  // Charger les produits depuis localStorage au démarrage
-  useEffect(() => {
+  // Charger les produits depuis l'API
+  const loadProduits = async () => {
     try {
-      const savedProduits = localStorage.getItem("babounette-produits")
-      if (savedProduits) {
-        const parsed = JSON.parse(savedProduits)
-        setProduits(parsed)
-      } else {
-        // Première utilisation, utiliser les produits par défaut
-        setProduits(defaultProduits)
-        localStorage.setItem("babounette-produits", JSON.stringify(defaultProduits))
+      setIsLoading(true)
+      setError(null)
+      
+      const response = await fetch('/api/shopping-items')
+      if (!response.ok) {
+        throw new Error('Erreur lors du chargement des produits')
       }
+      
+      const result = await response.json()
+      const convertedProduits = result.data.map(convertShoppingItemToProduit)
+      setProduits(convertedProduits)
     } catch (error) {
       console.error("Erreur lors du chargement des produits:", error)
-      setProduits(defaultProduits)
+      setError("Impossible de charger les produits")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Charger les produits au démarrage
+  useEffect(() => {
+    loadProduits()
   }, [])
 
-  // Sauvegarder les produits dans localStorage quand ils changent
-  useEffect(() => {
-    if (!isLoading && produits.length > 0) {
-      localStorage.setItem("babounette-produits", JSON.stringify(produits))
+  const addProduit = async (newProduit: Omit<Produit, "id" | "createdAt" | "updatedAt">) => {
+    try {
+      setError(null)
+      
+      // Trouver la catégorie correspondante
+      const categoriesResponse = await fetch('/api/shopping-items/categories')
+      if (!categoriesResponse.ok) {
+        throw new Error('Erreur lors de la récupération des catégories')
+      }
+      
+      const categoriesResult = await categoriesResponse.json()
+      const category = categoriesResult.data.find((cat: any) => cat.name === newProduit.categorie)
+      
+      const response = await fetch('/api/shopping-items', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newProduit.nom,
+          categoryId: category?.id,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erreur lors de l\'ajout du produit')
+      }
+
+      const result = await response.json()
+      const produit = convertShoppingItemToProduit(result.data)
+      setProduits(prev => [...prev, produit])
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du produit:", error)
+      setError("Impossible d'ajouter le produit")
+      throw error
     }
-  }, [produits, isLoading])
+  }
 
-  const addProduit = (newProduit: Omit<Produit, "id" | "createdAt" | "updatedAt">) => {
-    const now = new Date().toISOString()
-    const id = Math.max(...produits.map((p) => p.id), 0) + 1
+  const updateProduit = async (id: string, updates: Partial<Produit>) => {
+    try {
+      setError(null)
+      
+      // Trouver la catégorie correspondante si elle a changé
+      let categoryId: string | undefined
+      if (updates.categorie) {
+        const categoriesResponse = await fetch('/api/shopping-items/categories')
+        if (categoriesResponse.ok) {
+          const categoriesResult = await categoriesResponse.json()
+          const category = categoriesResult.data.find((cat: any) => cat.name === updates.categorie)
+          categoryId = category?.id
+        }
+      }
 
-    const produit: Produit = {
-      ...newProduit,
-      id,
-      createdAt: now,
-      updatedAt: now,
+      const response = await fetch(`/api/shopping-items/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: updates.nom,
+          categoryId,
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erreur lors de la mise à jour du produit')
+      }
+
+      const result = await response.json()
+      const updatedProduit = convertShoppingItemToProduit(result.data)
+      setProduits(prev =>
+        prev.map(produit =>
+          produit.id === id ? updatedProduit : produit,
+        ),
+      )
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour du produit:", error)
+      setError("Impossible de mettre à jour le produit")
+      throw error
     }
-
-    setProduits((prev) => [...prev, produit])
   }
 
-  const updateProduit = (id: number, updates: Partial<Produit>) => {
-    setProduits((prev) =>
-      prev.map((produit) =>
-        produit.id === id ? { ...produit, ...updates, updatedAt: new Date().toISOString() } : produit,
-      ),
-    )
+  const deleteProduit = async (id: string) => {
+    try {
+      setError(null)
+      
+      const response = await fetch(`/api/shopping-items/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erreur lors de la suppression du produit')
+      }
+
+      setProduits(prev => prev.filter(produit => produit.id !== id))
+    } catch (error) {
+      console.error("Erreur lors de la suppression du produit:", error)
+      setError("Impossible de supprimer le produit")
+      throw error
+    }
   }
 
-  const deleteProduit = (id: number) => {
-    setProduits((prev) => prev.filter((produit) => produit.id !== id))
+  const getProduitById = (id: string) => {
+    return produits.find(produit => produit.id === id)
   }
 
-  const getProduitById = (id: number) => {
-    return produits.find((produit) => produit.id === id)
+  const refreshProduits = async () => {
+    await loadProduits()
   }
 
   return (
@@ -143,6 +190,8 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
         deleteProduit,
         getProduitById,
         isLoading,
+        error,
+        refreshProduits,
       }}
     >
       {children}

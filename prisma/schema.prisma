@@ -93,7 +93,8 @@ model RecipeIngredient {
 model Ingredient {
   id          String            @id @default(uuid()) @db.Uuid
   name        String            // Nom de l'ingrédient (standardized)
-  category    String?           // Catégorie (ex: Viandes, Légumes)
+  categoryId  String?           @db.Uuid // Foreign key to Category
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   units       UnitType[]        // Array of applicable units (since multiple units per ingredient)
   embedding   String?           @db.Text // Optional: Embedding for semantic search on ingredients (stored as JSON string)
   recipes     RecipeIngredient[] // Many-to-many relation
@@ -104,9 +105,10 @@ model Ingredient {
 // Model for Categories (for shopping list and possibly ingredients)
 model Category {
   id             String           @id @default(uuid()) @db.Uuid
-  name           String           // Nom de la catégorie (ex: Fruits, Épicerie)
+  name           String           @unique // Contrainte unique pour éviter les doublons
   linkedItemId   String?          @db.Uuid // Optional liaison to Ingredient or ShoppingItem ID
   linkedItemType String?          // To specify if linked to 'ingredient' or 'shopping_item'
+  ingredients    Ingredient[]     // Relation to Ingredients
   shoppingItems  ShoppingItem[]   // Relation to ShoppingItems
 
   @@map("categories")
@@ -118,6 +120,8 @@ model ShoppingItem {
   name        String    // Nom de l'article
   categoryId  String?   @db.Uuid
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("shopping_items")
 }

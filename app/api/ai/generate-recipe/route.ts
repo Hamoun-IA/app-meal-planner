@@ -57,22 +57,49 @@ export async function POST(req: NextRequest) {
             const normalizedUnit = ingredient.unit.toUpperCase().replace('POIGNEE', 'POIGNEE').replace('PINCEE', 'PINCEE')
             
             // Détecter la catégorie basée sur le nom
-            let category = 'Autres'
+            let categoryId: string | undefined = undefined
+            
+            // Chercher une catégorie existante basée sur le nom de l'ingrédient
             if (['carotte', 'poireau', 'oignon', 'tomate', 'courgette', 'aubergine', 'poivron'].includes(normalizedName)) {
-              category = 'Légumes'
+              const legumesCategory = await ingredientService.getCategories().then(cats => 
+                cats.find(cat => cat.name.toLowerCase() === 'légumes')
+              )
+              categoryId = legumesCategory?.id
             } else if (['pomme', 'banane', 'orange', 'fraise', 'raisin', 'kiwi'].includes(normalizedName)) {
-              category = 'Fruits'
+              const fruitsCategory = await ingredientService.getCategories().then(cats => 
+                cats.find(cat => cat.name.toLowerCase() === 'fruits')
+              )
+              categoryId = fruitsCategory?.id
             } else if (['poulet', 'boeuf', 'porc', 'agneau', 'dinde'].includes(normalizedName)) {
-              category = 'Viandes'
+              const viandesCategory = await ingredientService.getCategories().then(cats => 
+                cats.find(cat => cat.name.toLowerCase() === 'viandes')
+              )
+              categoryId = viandesCategory?.id
             } else if (['saumon', 'thon', 'cabillaud', 'sardine', 'maquereau'].includes(normalizedName)) {
-              category = 'Poissons'
+              // Chercher une catégorie "Poissons" ou utiliser "Autres"
+              const poissonsCategory = await ingredientService.getCategories().then(cats => 
+                cats.find(cat => cat.name.toLowerCase() === 'poissons')
+              )
+              categoryId = poissonsCategory?.id
             } else if (['lait', 'fromage', 'yaourt', 'crème', 'beurre'].includes(normalizedName)) {
-              category = 'Produits laitiers'
+              // Chercher une catégorie "Produits laitiers" ou utiliser "Autres"
+              const laitiersCategory = await ingredientService.getCategories().then(cats => 
+                cats.find(cat => cat.name.toLowerCase() === 'produits laitiers')
+              )
+              categoryId = laitiersCategory?.id
+            }
+            
+            // Si aucune catégorie spécifique trouvée, utiliser "Autres"
+            if (!categoryId) {
+              const autresCategory = await ingredientService.getCategories().then(cats => 
+                cats.find(cat => cat.name.toLowerCase() === 'autres')
+              )
+              categoryId = autresCategory?.id
             }
             
             const newIngredient = await ingredientService.create({
               name: normalizedName, // Utiliser le nom normalisé
-              category: category,
+              categoryId: categoryId,
               units: [normalizedUnit as any], // Convertir en UnitType
             })
             ingredientId = newIngredient.id
