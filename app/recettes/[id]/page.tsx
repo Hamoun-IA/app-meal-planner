@@ -15,56 +15,116 @@ import {
   Timer,
   Edit2,
   Trash2,
+  Loader2,
+  Camera,
 } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect, use } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 import { useRecettes } from "@/contexts/recettes-context"
 import { useRouter } from "next/navigation"
+import { apiService } from "@/lib/services/api-service"
 
 interface RecettePageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function RecettePage({ params }: RecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { getRecetteById, deleteRecette, toggleLike } = useRecettes()
+  const { deleteRecette, toggleLike } = useRecettes()
   const router = useRouter()
   const [servings, setServings] = useState(4)
-  const [ingredients, setIngredients] = useState<Array<{ name: string; quantity: string; checked: boolean }>>([])
+  const [originalServings, setOriginalServings] = useState(4)
+  const [ingredients, setIngredients] = useState<Array<{ name: string; quantity: number; unit: string; checked: boolean; originalQuantity: number }>>([])
   const [instructions, setInstructions] = useState<Array<{ text: string; completed: boolean }>>([])
   const [activeTab, setActiveTab] = useState<"ingredients" | "instructions" | "tips">("ingredients")
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [recette, setRecette] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const recette = getRecetteById(Number.parseInt(params.id))
+  // Déballer les params avec React.use()
+  const { id } = use(params)
 
-  // Initialiser les états avec les données de la recette
-  useState(() => {
-    if (recette) {
-      setIngredients(recette.ingredients.map((ing) => ({ ...ing, checked: false })))
-      setInstructions(recette.instructions.map((inst, index) => ({ text: inst.text, completed: false })))
-      setServings(recette.servings)
+  // Charger la recette depuis l'API
+  useEffect(() => {
+    const loadRecette = async () => {
+      try {
+        setIsLoading(true)
+        setError(null)
+        
+        const response = await apiService.getRecetteById(id)
+        
+        if (response.error) {
+          setError(response.error)
+        } else if (response.data) {
+          setRecette(response.data)
+          
+          // Initialiser les ingrédients avec les quantités originales
+          if (response.data.ingredients) {
+            setIngredients(response.data.ingredients.map((ing: any) => ({
+              name: ing.ingredient.name,
+              quantity: ing.quantity,
+              unit: ing.unit,
+              checked: false,
+              originalQuantity: ing.quantity
+            })))
+          }
+          
+          // Initialiser les instructions
+          if (response.data.instructions) {
+            setInstructions(response.data.instructions.map((inst: string) => ({
+              text: inst,
+              completed: false
+            })))
+          }
+          
+          const originalServingsCount = response.data.servings || 4
+          setOriginalServings(originalServingsCount)
+          setServings(originalServingsCount)
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Erreur lors du chargement'
+        setError(errorMessage)
+      } finally {
+        setIsLoading(false)
+      }
     }
-  })
+
+    loadRecette()
+  }, [id])
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
     playBackSound()
   }
 
-  const handleLikeClick = () => {
+  const handleLikeClick = async () => {
     if (recette) {
-      playClickSound()
-      toggleLike(recette.id)
+      try {
+        playClickSound()
+        await toggleLike(recette.id)
+        // Recharger la recette pour avoir l'état à jour
+        const response = await apiService.getRecetteById(id)
+        if (response.data) {
+          setRecette(response.data)
+        }
+      } catch (error) {
+        console.error('Erreur lors du toggle like:', error)
+      }
     }
   }
 
-  const handleDeleteRecette = () => {
+  const handleDeleteRecette = async () => {
     if (recette) {
-      playClickSound()
-      deleteRecette(recette.id)
-      router.push("/recettes")
+      try {
+        playClickSound()
+        await deleteRecette(recette.id)
+        router.push("/recettes")
+      } catch (error) {
+        console.error('Erreur lors de la suppression:', error)
+      }
     }
   }
 
@@ -82,12 +142,58 @@ export default function RecettePage({ params }: RecettePageProps) {
     )
   }
 
+  // Calculer les quantités ajustées selon le nombre de portions
+  const calculateAdjustedQuantity = (originalQuantity: number, currentServings: number, originalServings: number) => {
+    const ratio = currentServings / originalServings
+    return Math.round(originalQuantity * ratio * 100) / 100 // Arrondir à 2 décimales
+  }
+
   const adjustServings = (change: number) => {
     playClickSound()
     const newServings = Math.max(1, servings + change)
     setServings(newServings)
+    
+    // Mettre à jour les quantités d'ingrédients selon le nouveau nombre de portions
+    setIngredients(prev => prev.map(ingredient => ({
+      ...ingredient,
+      quantity: calculateAdjustedQuantity(ingredient.originalQuantity, newServings, originalServings)
+    })))
   }
 
+  // État de chargement
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto text-pink-500 mb-4" />
+          <p className="text-gray-600">Chargement de la recette...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // État d'erreur
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <ChefHat className="w-8 h-8 text-red-500" />
+          </div>
+          <p className="text-red-600 text-lg mb-2">Erreur lors du chargement</p>
+          <p className="text-gray-500 mb-4">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+          >
+            Réessayer
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  // Recette non trouvée
   if (!recette) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
@@ -153,7 +259,7 @@ export default function RecettePage({ params }: RecettePageProps) {
             </Button>
             <div className="flex items-center space-x-3">
               <ChefHat className="w-6 h-6 text-white" />
-              <h1 className="text-white font-semibold text-xl">{recette.title}</h1>
+              <h1 className="text-white font-semibold text-xl">{recette.name}</h1>
             </div>
           </div>
 
@@ -189,20 +295,20 @@ export default function RecettePage({ params }: RecettePageProps) {
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6 animate-fade-in-up">
           <div className="relative">
             <img
-              src={recette.image || "/placeholder.svg?height=400&width=600&query=recette"}
-              alt={recette.title}
+              src={recette.imageUrl || "/placeholder.svg?height=400&width=600&query=recette"}
+              alt={recette.name}
               className="w-full h-64 md:h-80 object-cover"
             />
             <div className="absolute bottom-4 left-4">
               <span className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-3 py-1 rounded-full text-sm font-medium">
-                {recette.category}
+                {recette.dishType || recette.category || 'Autres'}
               </span>
             </div>
           </div>
 
           <div className="p-6">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">{recette.title}</h1>
-            <p className="text-gray-600 mb-4">{recette.description}</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">{recette.name}</h1>
+            <p className="text-gray-600 mb-4">{recette.tips || recette.description || ''}</p>
 
             {/* Recipe Info */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -210,15 +316,13 @@ export default function RecettePage({ params }: RecettePageProps) {
                 <Clock className="w-5 h-5 text-pink-500 mx-auto mb-1" />
                 <p className="text-sm text-gray-600">Total</p>
                 <p className="font-semibold text-gray-800">
-                  {Number.parseInt(recette.prepTime.replace(" min", "")) +
-                    Number.parseInt(recette.cookTime.replace(" min", ""))}{" "}
-                  min
+                  {(recette.prepTime || 0) + (recette.cookTime || 0)} min
                 </p>
               </div>
               <div className="text-center p-3 bg-rose-50 rounded-lg">
                 <Timer className="w-5 h-5 text-rose-500 mx-auto mb-1" />
                 <p className="text-sm text-gray-600">Préparation</p>
-                <p className="font-semibold text-gray-800">{recette.prepTime}</p>
+                <p className="font-semibold text-gray-800">{recette.prepTime || 0} min</p>
               </div>
               <div className="text-center p-3 bg-pink-50 rounded-lg">
                 <Users className="w-5 h-5 text-pink-500 mx-auto mb-1" />
@@ -241,12 +345,30 @@ export default function RecettePage({ params }: RecettePageProps) {
                   >
                     <Plus className="w-3 h-3" />
                   </Button>
+                  {servings !== originalServings && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        playClickSound()
+                        setServings(originalServings)
+                        setIngredients(prev => prev.map(ingredient => ({
+                          ...ingredient,
+                          quantity: ingredient.originalQuantity
+                        })))
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700 ml-2"
+                      title="Réinitialiser aux portions originales"
+                    >
+                      Reset
+                    </Button>
+                  )}
                 </div>
               </div>
               <div className="text-center p-3 bg-rose-50 rounded-lg">
                 <ChefHat className="w-5 h-5 text-rose-500 mx-auto mb-1" />
                 <p className="text-sm text-gray-600">Difficulté</p>
-                <p className="font-semibold text-gray-800">{recette.difficulty}</p>
+                <p className="font-semibold text-gray-800">{recette.difficulty || 'FACILE'}</p>
               </div>
             </div>
           </div>
@@ -283,9 +405,16 @@ export default function RecettePage({ params }: RecettePageProps) {
             {activeTab === "ingredients" && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">
-                    Ingrédients pour {servings} portion{servings > 1 ? "s" : ""}
-                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-lg font-semibold text-gray-800">
+                      Ingrédients pour {servings} portion{servings > 1 ? "s" : ""}
+                    </h3>
+                    {servings !== originalServings && (
+                      <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs font-medium">
+                        Quantités ajustées
+                      </span>
+                    )}
+                  </div>
                   <span className="text-sm text-gray-500">
                     {ingredients.filter((i) => i.checked).length}/{ingredients.length} cochés
                   </span>
@@ -313,7 +442,12 @@ export default function RecettePage({ params }: RecettePageProps) {
                     <span
                       className={`font-medium ${ingredient.checked ? "line-through text-gray-500" : "text-pink-600"}`}
                     >
-                      {ingredient.quantity}
+                      {ingredient.quantity} {ingredient.unit}
+                      {servings !== originalServings && (
+                        <span className="text-xs text-gray-500 ml-1">
+                          (original: {ingredient.originalQuantity})
+                        </span>
+                      )}
                     </span>
                   </div>
                 ))}
@@ -370,15 +504,28 @@ export default function RecettePage({ params }: RecettePageProps) {
             {activeTab === "tips" && (
               <div className="space-y-3">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Conseils de chef 👩‍🍳</h3>
-                {recette.tips.map((tip, index) => (
-                  <div
-                    key={index}
-                    className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200"
-                  >
-                    <span className="text-yellow-600 text-lg">💡</span>
-                    <p className="text-gray-800">{tip}</p>
+                {recette.tips ? (
+                  typeof recette.tips === 'string' ? (
+                    <div className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <span className="text-yellow-600 text-lg">💡</span>
+                      <p className="text-gray-800">{recette.tips}</p>
+                    </div>
+                  ) : (
+                    recette.tips.map((tip: string, index: number) => (
+                      <div
+                        key={index}
+                        className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200"
+                      >
+                        <span className="text-yellow-600 text-lg">💡</span>
+                        <p className="text-gray-800">{tip}</p>
+                      </div>
+                    ))
+                  )
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>Aucun conseil disponible pour cette recette</p>
                   </div>
-                ))}
+                )}
               </div>
             )}
           </div>

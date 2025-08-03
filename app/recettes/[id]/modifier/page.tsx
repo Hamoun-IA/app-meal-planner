@@ -4,59 +4,98 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import Link from "next/link"
-import { ArrowLeft, ChefHat, Clock, Users, Camera, Plus, Minus, X, Save } from "lucide-react"
-import { useState, useEffect } from "react"
+import { ArrowLeft, ChefHat, Clock, Users, Camera, Plus, Minus, X, Save, Loader2 } from "lucide-react"
+import { useState, useEffect, use } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
-import { useRecettes } from "@/contexts/recettes-context"
 import { useRouter } from "next/navigation"
+import { apiService } from "@/lib/services/api-service"
+import { ImageUpload } from '@/components/ui/image-upload'
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { AlertCircle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+interface Ingredient {
+  id: string
+  name: string
+  category: string
+  units: string[]
+}
 
 interface ModifierRecettePageProps {
-  params: {
+  params: Promise<{
     id: string
-  }
+  }>
 }
 
 export default function ModifierRecettePage({ params }: ModifierRecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { getRecetteById, updateRecette } = useRecettes()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([])
   const [recette, setRecette] = useState({
-    title: "",
+    name: "",
     description: "",
-    category: "",
+    dishType: "",
     difficulty: "",
-    prepTime: "",
-    cookTime: "",
+    prepTime: 0,
+    cookTime: 0,
     servings: 4,
     image: "",
-    ingredients: [{ name: "", quantity: "" }],
-    instructions: [{ text: "" }],
-    tips: [""],
+    imageUrl: "", // Ajout du champ imageUrl
+    ingredients: [{ ingredientId: "", quantity: 1, unit: "G" }],
+    instructions: [""],
+    tips: "",
     liked: false,
   })
 
-  const originalRecette = getRecetteById(Number.parseInt(params.id))
+  // Déballer les params avec React.use()
+  const { id } = use(params)
 
-  // Charger les données de la recette existante
+  // Charger les données de la recette existante et les ingrédients disponibles
   useEffect(() => {
-    if (originalRecette) {
-      setRecette({
-        title: originalRecette.title,
-        description: originalRecette.description,
-        category: originalRecette.category,
-        difficulty: originalRecette.difficulty,
-        prepTime: originalRecette.prepTime,
-        cookTime: originalRecette.cookTime,
-        servings: originalRecette.servings,
-        image: originalRecette.image || "",
-        ingredients: originalRecette.ingredients,
-        instructions: originalRecette.instructions,
-        tips: originalRecette.tips,
-        liked: originalRecette.liked,
-      })
+    const loadData = async () => {
+      try {
+        // Charger la recette
+        const recipeResponse = await apiService.getRecetteById(id)
+        if (recipeResponse.data) {
+          const recipeData = recipeResponse.data
+          setRecette({
+            name: recipeData.name,
+            description: recipeData.tips || "",
+            dishType: recipeData.dishType || "",
+            difficulty: recipeData.difficulty || "",
+            prepTime: recipeData.prepTime || 0,
+            cookTime: recipeData.cookTime || 0,
+            servings: recipeData.servings || 4, // Utiliser la valeur de la DB ou 4 par défaut
+            image: "/placeholder.svg?height=400&width=600",
+            imageUrl: recipeData.imageUrl || "", // Charger l'imageUrl
+            ingredients: recipeData.ingredients?.map((ing: any) => ({
+              ingredientId: ing.ingredient.id,
+              quantity: ing.quantity,
+              unit: ing.unit,
+            })) || [{ ingredientId: "", quantity: 1, unit: "G" }],
+            instructions: recipeData.instructions || [""],
+            tips: recipeData.tips || "",
+            liked: false,
+          })
+        }
+
+        // Charger les ingrédients disponibles
+        const ingredientsResponse = await apiService.getIngredients({ limit: 100 })
+        if (ingredientsResponse.data) {
+          setAvailableIngredients(ingredientsResponse.data.ingredients)
+        }
+      } catch (error) {
+        console.error('Erreur lors du chargement:', error)
+      }
     }
-  }, [originalRecette])
+
+    loadData()
+  }, [id])
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
@@ -72,7 +111,7 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
     playClickSound()
     setRecette((prev) => ({
       ...prev,
-      ingredients: [...prev.ingredients, { name: "", quantity: "" }],
+      ingredients: [...prev.ingredients, { ingredientId: "", quantity: 1, unit: "G" }],
     }))
   }
 
@@ -84,7 +123,7 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
     }))
   }
 
-  const updateIngredient = (index: number, field: string, value: string) => {
+  const updateIngredient = (index: number, field: string, value: string | number) => {
     setRecette((prev) => ({
       ...prev,
       ingredients: prev.ingredients.map((ingredient, i) =>
@@ -97,7 +136,7 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
     playClickSound()
     setRecette((prev) => ({
       ...prev,
-      instructions: [...prev.instructions, { text: "" }],
+      instructions: [...prev.instructions, ""],
     }))
   }
 
@@ -112,30 +151,7 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
   const updateInstruction = (index: number, value: string) => {
     setRecette((prev) => ({
       ...prev,
-      instructions: prev.instructions.map((instruction, i) => (i === index ? { text: value } : instruction)),
-    }))
-  }
-
-  const addTip = () => {
-    playClickSound()
-    setRecette((prev) => ({
-      ...prev,
-      tips: [...prev.tips, ""],
-    }))
-  }
-
-  const removeTip = (index: number) => {
-    playClickSound()
-    setRecette((prev) => ({
-      ...prev,
-      tips: prev.tips.filter((_, i) => i !== index),
-    }))
-  }
-
-  const updateTip = (index: number, value: string) => {
-    setRecette((prev) => ({
-      ...prev,
-      tips: prev.tips.map((tip, i) => (i === index ? value : tip)),
+      instructions: prev.instructions.map((instruction, i) => (i === index ? value : instruction)),
     }))
   }
 
@@ -155,22 +171,17 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     playClickSound()
 
-    if (!originalRecette) {
-      alert("Recette non trouvée !")
-      return
-    }
-
     // Validation basique
-    if (!recette.title.trim()) {
-      alert("Le titre est obligatoire !")
+    if (!recette.name.trim()) {
+      alert("Le nom est obligatoire !")
       return
     }
 
-    if (!recette.category) {
-      alert("La catégorie est obligatoire !")
+    if (!recette.dishType) {
+      alert("Le type de plat est obligatoire !")
       return
     }
 
@@ -179,45 +190,102 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
       return
     }
 
-    // Nettoyer les données
-    const cleanedRecette = {
-      title: recette.title,
-      description: recette.description,
-      category: recette.category,
-      difficulty: recette.difficulty,
-      prepTime: recette.prepTime,
-      cookTime: recette.cookTime,
-      servings: recette.servings,
-      image: recette.image,
-      ingredients: recette.ingredients.filter((ing) => ing.name.trim() && ing.quantity.trim()),
-      instructions: recette.instructions.filter((inst) => inst.text.trim()),
-      tips: recette.tips.filter((tip) => tip.trim()),
-      liked: recette.liked,
+    const validInstructions = recette.instructions.filter(inst => inst.trim())
+    if (validInstructions.length < 2) {
+      alert("Au moins 2 instructions sont requises !")
+      return
     }
 
-    // Mettre à jour la recette
-    updateRecette(originalRecette.id, cleanedRecette)
+    // Vérifier que chaque instruction a au moins 10 caractères
+    const shortInstructions = validInstructions.filter(inst => inst.trim().length < 10)
+    if (shortInstructions.length > 0) {
+      alert(`Les instructions suivantes sont trop courtes (minimum 10 caractères) :\n${shortInstructions.map((inst, index) => `${index + 1}. "${inst}"`).join('\n')}`)
+      return
+    }
 
-    // Rediriger vers la page de détail
-    router.push(`/recettes/${originalRecette.id}`)
+    // Vérifier qu'il y a au moins un ingrédient
+    const validIngredients = recette.ingredients.filter(ing => ing.ingredientId)
+    if (validIngredients.length === 0) {
+      alert("Au moins un ingrédient est requis !")
+      return
+    }
+
+    // Nettoyer les données
+    const cleanedRecette = {
+      ...recette,
+      ingredients: validIngredients,
+      instructions: validInstructions,
+    }
+
+    try {
+      setIsLoading(true)
+      
+      // Transformer les données pour correspondre à l'API
+      const apiData = {
+        name: cleanedRecette.name,
+        prepTime: cleanedRecette.prepTime > 0 ? cleanedRecette.prepTime : 15, // Minimum 15 minutes si vide
+        cookTime: cleanedRecette.cookTime > 0 ? cleanedRecette.cookTime : 10, // Minimum 10 minutes si vide
+        difficulty: cleanedRecette.difficulty as any,
+        dishType: cleanedRecette.dishType as any,
+        instructions: cleanedRecette.instructions,
+        tips: cleanedRecette.tips,
+        servings: cleanedRecette.servings, // Inclure le nombre de portions
+        ingredients: cleanedRecette.ingredients.map(ing => ({
+          ingredientId: ing.ingredientId,
+          quantity: ing.quantity,
+          unit: ing.unit as any,
+        })),
+        imageUrl: cleanedRecette.imageUrl || undefined, // Inclure l'imageUrl
+      }
+      
+      // Mettre à jour la recette via l'API
+      const response = await apiService.updateRecette(id, apiData)
+      
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      // Rediriger vers la page de détail
+      router.push(`/recettes/${id}`)
+    } catch (error) {
+      console.error('Erreur lors de la modification:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors de la modification de la recette'
+      alert(`Erreur lors de la modification de la recette : ${errorMessage}`)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  if (!originalRecette) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
-        <div className="text-center">
-          <ChefHat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600 text-lg">Recette non trouvée 🥺</p>
-          <Button asChild className="mt-4 bg-gradient-to-r from-pink-500 to-rose-500">
-            <Link href="/recettes">Retour aux recettes</Link>
-          </Button>
-        </div>
-      </div>
-    )
-  }
+  const dishTypes = [
+    { value: "DESSERT", label: "Dessert" },
+    { value: "PLAT_PRINCIPAL", label: "Plat principal" },
+    { value: "ACCOMPAGNEMENT", label: "Accompagnement" },
+    { value: "ENTREE", label: "Entrée" },
+    { value: "PETIT_DEJEUNER", label: "Petit-déjeuner" },
+    { value: "APERITIF", label: "Apéritif" },
+    { value: "BOISSON", label: "Boisson" },
+  ]
 
-  const categories = ["Dessert", "Plat principal", "Petit-déjeuner", "Entrée", "Apéritif", "Boisson"]
-  const difficulties = ["Très facile", "Facile", "Moyen", "Difficile"]
+  const difficulties = [
+    { value: "FACILE", label: "Facile" },
+    { value: "MOYEN", label: "Moyen" },
+    { value: "DIFFICILE", label: "Difficile" },
+  ]
+
+  const units = [
+    { value: "G", label: "Grammes (g)" },
+    { value: "KG", label: "Kilogrammes (kg)" },
+    { value: "ML", label: "Millilitres (ml)" },
+    { value: "CL", label: "Centilitres (cl)" },
+    { value: "L", label: "Litres (l)" },
+    { value: "C_A_C", label: "Cuillère à café" },
+    { value: "C_A_S", label: "Cuillère à soupe" },
+    { value: "PINCEE", label: "Pincée" },
+    { value: "POIGNEE", label: "Poignée" },
+    { value: "BOUQUET", label: "Bouquet" },
+    { value: "GOUTTE", label: "Goutte" },
+    { value: "PIECE", label: "Pièce" },
+  ]
 
   const steps = [
     { number: 1, title: "Informations", icon: "📝" },
@@ -225,6 +293,18 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
     { number: 3, title: "Instructions", icon: "👩‍🍳" },
     { number: 4, title: "Finalisation", icon: "✨" },
   ]
+
+  if (!recette) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <ChefHat className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-600 text-lg">Chargement de la recette...</p>
+          <Loader2 className="w-10 h-10 text-pink-500 animate-spin mx-auto mt-4" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-25 to-pink-100 relative overflow-hidden">
@@ -243,7 +323,7 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
               className="text-white hover:bg-white/20 active:scale-95 transition-transform duration-100"
               onMouseDown={handleBackClick}
             >
-              <Link href={`/recettes/${originalRecette.id}`}>
+              <Link href={`/recettes/${id}`}>
                 <ArrowLeft className="w-5 h-5" />
               </Link>
             </Button>
@@ -256,9 +336,14 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
           <Button
             onClick={handleSave}
             className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+            disabled={isLoading}
           >
-            <Save className="w-4 h-4 mr-2" />
-            Sauvegarder
+            {isLoading ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4 mr-2" />
+            )}
+            {isLoading ? "Sauvegarde..." : "Sauvegarder"}
           </Button>
         </div>
       </div>
@@ -307,22 +392,18 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
               {/* Photo de la recette */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Photo de la recette</label>
-                <div className="border-2 border-dashed border-pink-200 rounded-lg p-8 text-center hover:border-pink-300 transition-colors">
-                  <Camera className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 mb-2">Clique pour modifier la photo</p>
-                  <p className="text-sm text-gray-500">JPG, PNG jusqu'à 5MB</p>
-                  <Button variant="outline" className="mt-4 border-pink-200 hover:bg-pink-50 bg-transparent">
-                    Choisir une photo
-                  </Button>
-                </div>
+                <ImageUpload
+                  currentImageUrl={recette.imageUrl}
+                  onImageChange={(imageUrl) => handleInputChange("imageUrl", imageUrl)}
+                />
               </div>
 
-              {/* Titre */}
+              {/* Nom */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Titre de la recette *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Nom de la recette *</label>
                 <Input
-                  value={recette.title}
-                  onChange={(e) => handleInputChange("title", e.target.value)}
+                  value={recette.name}
+                  onChange={(e) => handleInputChange("name", e.target.value)}
                   placeholder="Ex: Cookies aux pépites de chocolat"
                   className="border-pink-200 focus:border-pink-400"
                 />
@@ -339,19 +420,19 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
                 />
               </div>
 
-              {/* Catégorie et Difficulté */}
+              {/* Type de plat et Difficulté */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Catégorie *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Type de plat *</label>
                   <select
-                    value={recette.category}
-                    onChange={(e) => handleInputChange("category", e.target.value)}
+                    value={recette.dishType}
+                    onChange={(e) => handleInputChange("dishType", e.target.value)}
                     className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
                   >
-                    <option value="">Choisir une catégorie</option>
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
+                    <option value="">Choisir un type de plat</option>
+                    {dishTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
                       </option>
                     ))}
                   </select>
@@ -366,8 +447,8 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
                   >
                     <option value="">Choisir la difficulté</option>
                     {difficulties.map((diff) => (
-                      <option key={diff} value={diff}>
-                        {diff}
+                      <option key={diff.value} value={diff.value}>
+                        {diff.label}
                       </option>
                     ))}
                   </select>
@@ -377,26 +458,26 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
               {/* Temps et Portions */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Temps de préparation</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Temps de préparation (optionnel)</label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      value={recette.prepTime}
-                      onChange={(e) => handleInputChange("prepTime", e.target.value)}
-                      placeholder="15 min"
+                      value={recette.prepTime || ""}
+                      onChange={(e) => handleInputChange("prepTime", Number(e.target.value) || 0)}
+                      placeholder="15 min (défaut)"
                       className="pl-10 border-pink-200 focus:border-pink-400"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Temps de cuisson</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Temps de cuisson (optionnel)</label>
                   <div className="relative">
                     <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                     <Input
-                      value={recette.cookTime}
-                      onChange={(e) => handleInputChange("cookTime", e.target.value)}
-                      placeholder="10 min"
+                      value={recette.cookTime || ""}
+                      onChange={(e) => handleInputChange("cookTime", Number(e.target.value) || 0)}
+                      placeholder="10 min (défaut)"
                       className="pl-10 border-pink-200 focus:border-pink-400"
                     />
                   </div>
@@ -446,19 +527,37 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
                 {recette.ingredients.map((ingredient, index) => (
                   <div key={index} className="flex items-center space-x-3 p-4 bg-pink-50 rounded-lg">
                     <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <Input
-                        value={ingredient.name}
-                        onChange={(e) => updateIngredient(index, "name", e.target.value)}
-                        placeholder="Nom de l'ingrédient"
-                        className="border-pink-200 focus:border-pink-400"
-                      />
-                      <Input
-                        value={ingredient.quantity}
-                        onChange={(e) => updateIngredient(index, "quantity", e.target.value)}
-                        placeholder="Quantité (ex: 200g)"
-                        className="border-pink-200 focus:border-pink-400"
-                      />
+                      <select
+                        value={ingredient.ingredientId}
+                        onChange={(e) => updateIngredient(index, "ingredientId", e.target.value)}
+                        className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                      >
+                        <option value="">Choisir un ingrédient</option>
+                        {availableIngredients.map((ing) => (
+                          <option key={ing.id} value={ing.id}>
+                            {ing.name}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={ingredient.unit}
+                        onChange={(e) => updateIngredient(index, "unit", e.target.value)}
+                        className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
+                      >
+                        <option value="G">Choisir une unité</option>
+                        {units.map((unit) => (
+                          <option key={unit.value} value={unit.value}>
+                            {unit.label}
+                          </option>
+                        ))}
+                      </select>
                     </div>
+                    <Input
+                      value={ingredient.quantity}
+                      onChange={(e) => updateIngredient(index, "quantity", Number(e.target.value))}
+                      placeholder="Quantité"
+                      className="w-24 border-pink-200 focus:border-pink-400"
+                    />
                     {recette.ingredients.length > 1 && (
                       <Button
                         variant="ghost"
@@ -492,12 +591,20 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
                     <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full flex items-center justify-center font-medium text-sm">
                       {index + 1}
                     </div>
-                    <Textarea
-                      value={instruction.text}
-                      onChange={(e) => updateInstruction(index, e.target.value)}
-                      placeholder={`Étape ${index + 1}: Décris cette étape en détail...`}
-                      className="flex-1 border-pink-200 focus:border-pink-400 min-h-[80px]"
-                    />
+                    <div className="flex-1">
+                      <Textarea
+                        value={instruction}
+                        onChange={(e) => updateInstruction(index, e.target.value)}
+                        placeholder={`Étape ${index + 1}: Décris cette étape en détail (minimum 10 caractères)...`}
+                        className="border-pink-200 focus:border-pink-400 min-h-[80px]"
+                      />
+                      <div className="mt-1 text-xs text-gray-500">
+                        {instruction.length}/10 caractères minimum
+                        {instruction.length < 10 && instruction.length > 0 && (
+                          <span className="text-red-500 ml-2">⚠️ Trop court</span>
+                        )}
+                      </div>
+                    </div>
                     {recette.instructions.length > 1 && (
                       <Button
                         variant="ghost"
@@ -520,44 +627,13 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
               <h2 className="text-2xl font-bold text-gray-800">Conseils et finalisation</h2>
 
               <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-800">Conseils de chef (optionnel)</h3>
-                  <Button
-                    onClick={addTip}
-                    variant="outline"
-                    className="border-pink-200 hover:bg-pink-50 bg-transparent"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Ajouter un conseil
-                  </Button>
-                </div>
-
-                <div className="space-y-3">
-                  {recette.tips.map((tip, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200"
-                    >
-                      <span className="text-yellow-600 text-lg flex-shrink-0">💡</span>
-                      <Input
-                        value={tip}
-                        onChange={(e) => updateTip(index, e.target.value)}
-                        placeholder="Partage un conseil utile..."
-                        className="flex-1 border-yellow-200 focus:border-yellow-400 bg-white"
-                      />
-                      {recette.tips.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeTip(index)}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Conseils de chef (optionnel)</label>
+                <Textarea
+                  value={recette.tips}
+                  onChange={(e) => handleInputChange("tips", e.target.value)}
+                  placeholder="Partage un conseil utile..."
+                  className="border-pink-200 focus:border-pink-400 min-h-[100px]"
+                />
               </div>
 
               {/* Résumé de la recette */}
@@ -565,12 +641,12 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Résumé de ta recette ✨</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-600">Titre:</p>
-                    <p className="font-medium">{recette.title || "Non défini"}</p>
+                    <p className="text-gray-600">Nom:</p>
+                    <p className="font-medium">{recette.name || "Non défini"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-600">Catégorie:</p>
-                    <p className="font-medium">{recette.category || "Non définie"}</p>
+                    <p className="text-gray-600">Type de plat:</p>
+                    <p className="font-medium">{recette.dishType || "Non défini"}</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Difficulté:</p>
@@ -582,11 +658,11 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
                   </div>
                   <div>
                     <p className="text-gray-600">Ingrédients:</p>
-                    <p className="font-medium">{recette.ingredients.filter((i) => i.name).length} ingrédients</p>
+                    <p className="font-medium">{recette.ingredients.filter((i) => i.ingredientId).length} ingrédients</p>
                   </div>
                   <div>
                     <p className="text-gray-600">Étapes:</p>
-                    <p className="font-medium">{recette.instructions.filter((i) => i.text).length} étapes</p>
+                    <p className="font-medium">{recette.instructions.filter((i) => i).length} étapes</p>
                   </div>
                 </div>
               </div>
@@ -628,9 +704,14 @@ export default function ModifierRecettePage({ params }: ModifierRecettePageProps
               <Button
                 onClick={handleSave}
                 className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                disabled={isLoading}
               >
-                <Save className="w-4 h-4 mr-2" />
-                Sauvegarder les modifications
+                {isLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="w-4 h-4 mr-2" />
+                )}
+                {isLoading ? "Sauvegarde..." : "Sauvegarder les modifications"}
               </Button>
             )}
           </div>
