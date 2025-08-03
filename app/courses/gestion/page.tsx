@@ -15,6 +15,22 @@ interface Category {
   name: string
 }
 
+// Unités de mesure disponibles (basées sur l'enum UnitType)
+const units = [
+  { value: "G", label: "Gramme (g)" },
+  { value: "KG", label: "Kilogramme (kg)" },
+  { value: "ML", label: "Millilitre (ml)" },
+  { value: "CL", label: "Centilitre (cl)" },
+  { value: "L", label: "Litre (l)" },
+  { value: "C_A_C", label: "Cuillère à café" },
+  { value: "C_A_S", label: "Cuillère à soupe" },
+  { value: "PINCEE", label: "Pincée" },
+  { value: "POIGNEE", label: "Poignée" },
+  { value: "BOUQUET", label: "Bouquet" },
+  { value: "GOUTTE", label: "Goutte" },
+  { value: "PIECE", label: "Pièce" },
+]
+
 export default function GestionProduitsPage() {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
   const { produits, addProduit, updateProduit, deleteProduit, isLoading, error, refreshProduits } = useProduits()
@@ -33,10 +49,8 @@ export default function GestionProduitsPage() {
   const [formData, setFormData] = useState({
     nom: "",
     categorie: "",
-    typeQuantite: "",
+    unit: "",
   })
-
-  const typesQuantite = ["Unité", "Gramme", "Kilogramme", "Litre", "Millilitre", "Paquet", "Boîte", "Sachet"]
 
   // Nettoyer le localStorage au chargement de la page
   useEffect(() => {
@@ -85,14 +99,14 @@ export default function GestionProduitsPage() {
     setFormData({
       nom: "",
       categorie: "",
-      typeQuantite: "",
+      unit: "",
     })
   }
 
   const handleAddProduit = async () => {
     playClickSound()
 
-    if (!formData.nom.trim() || !formData.categorie || !formData.typeQuantite) {
+    if (!formData.nom.trim() || !formData.categorie || !formData.unit) {
       toast({
         title: "Erreur",
         description: "Tous les champs sont obligatoires !",
@@ -106,19 +120,18 @@ export default function GestionProduitsPage() {
       await addProduit({
         nom: formData.nom.trim(),
         categorie: formData.categorie,
-        typeQuantite: formData.typeQuantite,
+        unit: formData.unit,
       })
-
-      resetForm()
-      setShowAddModal(false)
+      
       toast({
         title: "Succès",
         description: "Produit ajouté avec succès !",
       })
+      closeModals()
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible d'ajouter le produit",
+        description: "Impossible d'ajouter le produit",
         variant: "destructive",
       })
     } finally {
@@ -133,7 +146,7 @@ export default function GestionProduitsPage() {
       setFormData({
         nom: produit.nom,
         categorie: produit.categorie,
-        typeQuantite: produit.typeQuantite,
+        unit: produit.unit || "",
       })
       setEditingProduit(id)
       setShowEditModal(true)
@@ -143,7 +156,7 @@ export default function GestionProduitsPage() {
   const handleUpdateProduit = async () => {
     playClickSound()
 
-    if (!formData.nom.trim() || !formData.categorie || !formData.typeQuantite || !editingProduit) {
+    if (!editingProduit || !formData.nom.trim() || !formData.categorie || !formData.unit) {
       toast({
         title: "Erreur",
         description: "Tous les champs sont obligatoires !",
@@ -157,20 +170,18 @@ export default function GestionProduitsPage() {
       await updateProduit(editingProduit, {
         nom: formData.nom.trim(),
         categorie: formData.categorie,
-        typeQuantite: formData.typeQuantite,
+        unit: formData.unit,
       })
-
-      resetForm()
-      setShowEditModal(false)
-      setEditingProduit(null)
+      
       toast({
         title: "Succès",
         description: "Produit modifié avec succès !",
       })
+      closeModals()
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de modifier le produit",
+        description: "Impossible de modifier le produit",
         variant: "destructive",
       })
     } finally {
@@ -180,18 +191,20 @@ export default function GestionProduitsPage() {
 
   const handleDeleteProduit = async (id: string) => {
     playClickSound()
+    
     try {
       setIsSubmitting(true)
       await deleteProduit(id)
-      setShowDeleteConfirm(null)
+      
       toast({
         title: "Succès",
         description: "Produit supprimé avec succès !",
       })
+      setShowDeleteConfirm(null)
     } catch (error) {
       toast({
         title: "Erreur",
-        description: error instanceof Error ? error.message : "Impossible de supprimer le produit",
+        description: "Impossible de supprimer le produit",
         variant: "destructive",
       })
     } finally {
@@ -285,17 +298,17 @@ export default function GestionProduitsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type de quantité *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Unité de mesure *</label>
                 <select
-                  value={formData.typeQuantite}
-                  onChange={(e) => setFormData({ ...formData, typeQuantite: e.target.value })}
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                   className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
                   disabled={isSubmitting}
                 >
-                  <option value="">Choisir un type</option>
-                  {typesQuantite.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                  <option value="">Choisir une unité</option>
+                  {units.map((unit) => (
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label}
                     </option>
                   ))}
                 </select>
@@ -376,17 +389,17 @@ export default function GestionProduitsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Type de quantité *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Unité de mesure *</label>
                 <select
-                  value={formData.typeQuantite}
-                  onChange={(e) => setFormData({ ...formData, typeQuantite: e.target.value })}
+                  value={formData.unit}
+                  onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
                   className="w-full p-3 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none"
                   disabled={isSubmitting}
                 >
-                  <option value="">Choisir un type</option>
-                  {typesQuantite.map((type) => (
-                    <option key={type} value={type}>
-                      {type}
+                  <option value="">Choisir une unité</option>
+                  {units.map((unit) => (
+                    <option key={unit.value} value={unit.value}>
+                      {unit.label}
                     </option>
                   ))}
                 </select>
@@ -404,7 +417,7 @@ export default function GestionProduitsPage() {
               </Button>
               <Button
                 onClick={handleUpdateProduit}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                className="flex-1 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
@@ -414,7 +427,7 @@ export default function GestionProduitsPage() {
                   </div>
                 ) : (
                   <>
-                    <Check className="w-4 h-4 mr-2" />
+                    <Edit2 className="w-4 h-4 mr-2" />
                     Modifier
                   </>
                 )}
@@ -427,30 +440,27 @@ export default function GestionProduitsPage() {
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full animate-fade-in-up">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full animate-fade-in-up">
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trash2 className="w-8 h-8 text-red-500" />
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <Trash2 className="h-6 w-6 text-red-600" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Supprimer le produit ?</h3>
-              <p className="text-gray-600 mb-6">
-                Cette action est irréversible. Es-tu sûre de vouloir supprimer ce produit ?
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Supprimer le produit</h3>
+              <p className="text-sm text-gray-500 mb-6">
+                Êtes-vous sûr de vouloir supprimer ce produit ? Cette action ne peut pas être annulée.
               </p>
               <div className="flex space-x-3">
                 <Button
                   variant="outline"
-                  onClick={() => {
-                    playClickSound()
-                    setShowDeleteConfirm(null)
-                  }}
-                  className="flex-1 border-gray-200 hover:bg-gray-50"
+                  onClick={() => setShowDeleteConfirm(null)}
+                  className="flex-1 border-gray-200 hover:bg-gray-50 bg-transparent"
                   disabled={isSubmitting}
                 >
                   Annuler
                 </Button>
                 <Button
                   onClick={() => handleDeleteProduit(showDeleteConfirm)}
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white"
+                  className="flex-1 bg-red-500 hover:bg-red-600"
                   disabled={isSubmitting}
                 >
                   {isSubmitting ? (
@@ -459,7 +469,10 @@ export default function GestionProduitsPage() {
                       Suppression...
                     </div>
                   ) : (
-                    "Supprimer"
+                    <>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Supprimer
+                    </>
                   )}
                 </Button>
               </div>
@@ -484,11 +497,11 @@ export default function GestionProduitsPage() {
               </Link>
             </Button>
             <div className="flex items-center space-x-3">
-              <Settings className="w-6 h-6 text-white" />
+              <Package className="w-6 h-6 text-white" />
               <div>
                 <h1 className="text-white font-semibold text-xl">Gestion des produits</h1>
                 <p className="text-white/80 text-sm">
-                  {isLoading ? "Chargement..." : `${produits.length} produit${produits.length > 1 ? "s" : ""} enregistré${produits.length > 1 ? "s" : ""}`}
+                  {isLoading ? "Chargement..." : `${produits.length} produit${produits.length > 1 ? "s" : ""}`}
                 </p>
               </div>
             </div>
@@ -496,149 +509,122 @@ export default function GestionProduitsPage() {
 
           <Button
             onClick={openAddModal}
-            className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
-            disabled={isLoading}
+            className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 p-2 md:px-3 md:py-2"
+            onMouseDown={() => playClickSound()}
+            title="Ajouter un produit"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Ajouter un produit
+            <Plus className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Ajouter un produit</span>
           </Button>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto p-4">
-        {/* Search and Filter Bar */}
+        {/* Search and Filter */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Rechercher un produit... 🔍"
-                className="pl-10 rounded-full border-pink-200 focus:border-pink-400"
-                disabled={isLoading}
+                placeholder="Rechercher un produit..."
+                className="pl-10 border-pink-200 focus:border-pink-400"
               />
             </div>
-            <div className="flex items-center space-x-3">
-              <Filter className="w-5 h-5 text-gray-400" />
+
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <select
                 value={filterCategory}
-                onChange={(e) => {
-                  playClickSound()
-                  setFilterCategory(e.target.value)
-                }}
-                className="px-4 py-2 border border-pink-200 rounded-full focus:border-pink-400 focus:outline-none bg-white min-w-[200px]"
-                disabled={isLoading || categoriesLoading}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-pink-200 rounded-lg focus:border-pink-400 focus:outline-none bg-white"
               >
                 <option value="">Toutes les catégories</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.name}>
-                    {category.name}
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
-              {filterCategory && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    playClickSound()
-                    setFilterCategory("")
-                  }}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
+            </div>
+
+            <div className="flex space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchTerm("")
+                  setFilterCategory("")
+                }}
+                className="border-gray-200 hover:bg-gray-50"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Réinitialiser
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Products Table */}
-        <div
-          className="bg-white rounded-2xl shadow-lg overflow-hidden animate-fade-in-up"
-          style={{ animationDelay: "0.1s" }}
-        >
-          {isLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Chargement des produits...</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-pink-100 to-rose-100">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Produit</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Catégorie</th>
-                    <th className="px-6 py-4 text-left text-sm font-semibold text-gray-800">Type de quantité</th>
-                    <th className="px-6 py-4 text-center text-sm font-semibold text-gray-800">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredProduits.map((produit, index) => (
-                    <tr
-                      key={produit.id}
-                      className="hover:bg-pink-25 transition-colors animate-fade-in-up"
-                      style={{ animationDelay: `${index * 0.05}s` }}
-                    >
-                      <td className="px-6 py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-pink-400 to-rose-400 rounded-full flex items-center justify-center">
-                            <Package className="w-4 h-4 text-white" />
-                          </div>
-                          <span className="font-medium text-gray-800">{produit.nom}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-pink-100 text-pink-700">
-                          {produit.categorie}
+        {/* Products List */}
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement des produits...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredProduits.map((produit, index) => (
+              <div
+                key={produit.id}
+                className="bg-white rounded-2xl shadow-lg p-4 animate-fade-in-up hover:shadow-xl transition-shadow"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-800 text-lg mb-1">{produit.nom}</h3>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <span className="inline-flex items-center px-2 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-medium">
+                        {produit.categorie}
+                      </span>
+                      {produit.unit && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs font-medium">
+                          {units.find(u => u.value === produit.unit)?.label || produit.unit}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-gray-600 font-medium">{produit.typeQuantite}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center justify-center space-x-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleEditProduit(produit.id)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2"
-                            disabled={isSubmitting}
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              playClickSound()
-                              setShowDeleteConfirm(produit.id)
-                            }}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2"
-                            disabled={isSubmitting}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditProduit(produit.id)}
+                      className="text-gray-400 hover:text-blue-500 hover:bg-blue-50"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setShowDeleteConfirm(produit.id)}
+                      className="text-gray-400 hover:text-red-500 hover:bg-red-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
-          {!isLoading && filteredProduits.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-600 text-lg">Aucun produit trouvé 📦</p>
-              <p className="text-gray-500 mb-4">
-                {searchTerm || filterCategory
-                  ? "Essaie avec d'autres critères !"
-                  : "Commence par ajouter ton premier produit !"}
-              </p>
+        {filteredProduits.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600 text-lg">Aucun produit trouvé</p>
+            <p className="text-gray-500 mb-4">
+              {searchTerm || filterCategory ? "Essayez de modifier vos critères de recherche" : "Commencez par ajouter votre premier produit"}
+            </p>
+            {!searchTerm && !filterCategory && (
               <Button
                 onClick={openAddModal}
                 className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
@@ -646,33 +632,7 @@ export default function GestionProduitsPage() {
                 <Plus className="w-4 h-4 mr-2" />
                 Ajouter un produit
               </Button>
-            </div>
-          )}
-        </div>
-
-        {/* Stats */}
-        {!isLoading && filteredProduits.length > 0 && (
-          <div
-            className="bg-white rounded-2xl shadow-lg p-6 mt-6 animate-fade-in-up"
-            style={{ animationDelay: "0.2s" }}
-          >
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Statistiques</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-pink-50 rounded-lg">
-                <div className="text-2xl font-bold text-pink-600">{produits.length}</div>
-                <div className="text-sm text-gray-600">Produits total</div>
-              </div>
-              <div className="text-center p-4 bg-rose-50 rounded-lg">
-                <div className="text-2xl font-bold text-rose-600">{new Set(produits.map((p) => p.categorie)).size}</div>
-                <div className="text-sm text-gray-600">Catégories</div>
-              </div>
-              <div className="text-center p-4 bg-pink-50 rounded-lg">
-                <div className="text-2xl font-bold text-pink-600">
-                  {new Set(produits.map((p) => p.typeQuantite)).size}
-                </div>
-                <div className="text-sm text-gray-600">Types de quantité</div>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>

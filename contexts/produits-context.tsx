@@ -6,7 +6,7 @@ export interface Produit {
   id: string
   nom: string
   categorie: string
-  typeQuantite: string
+  unit: string
   createdAt: string
   updatedAt: string
 }
@@ -30,7 +30,7 @@ const convertShoppingItemToProduit = (item: any): Produit => {
     id: item.id,
     nom: item.name,
     categorie: item.category?.name || "Autres",
-    typeQuantite: "Unité", // Valeur par défaut car ShoppingItem n'a pas de typeQuantite
+    unit: item.unit || "PIECE", // Valeur par défaut si pas d'unité
     createdAt: item.createdAt,
     updatedAt: item.updatedAt,
   }
@@ -89,6 +89,7 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           name: newProduit.nom,
           categoryId: category?.id,
+          unit: newProduit.unit,
         }),
       })
 
@@ -98,11 +99,10 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
       }
 
       const result = await response.json()
-      const produit = convertShoppingItemToProduit(result.data)
-      setProduits(prev => [...prev, produit])
+      const newProduitConverted = convertShoppingItemToProduit(result.data)
+      setProduits(prev => [...prev, newProduitConverted])
     } catch (error) {
       console.error("Erreur lors de l'ajout du produit:", error)
-      setError("Impossible d'ajouter le produit")
       throw error
     }
   }
@@ -112,7 +112,7 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
       setError(null)
       
       // Trouver la catégorie correspondante si elle a changé
-      let categoryId: string | undefined
+      let categoryId = undefined
       if (updates.categorie) {
         const categoriesResponse = await fetch('/api/shopping-items/categories')
         if (categoriesResponse.ok) {
@@ -121,7 +121,7 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
           categoryId = category?.id
         }
       }
-
+      
       const response = await fetch(`/api/shopping-items/${id}`, {
         method: 'PUT',
         headers: {
@@ -129,25 +129,21 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           name: updates.nom,
-          categoryId,
+          categoryId: categoryId,
+          unit: updates.unit,
         }),
       })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erreur lors de la mise à jour du produit')
+        throw new Error(errorData.error || 'Erreur lors de la modification du produit')
       }
 
       const result = await response.json()
       const updatedProduit = convertShoppingItemToProduit(result.data)
-      setProduits(prev =>
-        prev.map(produit =>
-          produit.id === id ? updatedProduit : produit,
-        ),
-      )
+      setProduits(prev => prev.map(p => p.id === id ? updatedProduit : p))
     } catch (error) {
-      console.error("Erreur lors de la mise à jour du produit:", error)
-      setError("Impossible de mettre à jour le produit")
+      console.error("Erreur lors de la modification du produit:", error)
       throw error
     }
   }
@@ -165,35 +161,34 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
         throw new Error(errorData.error || 'Erreur lors de la suppression du produit')
       }
 
-      setProduits(prev => prev.filter(produit => produit.id !== id))
+      setProduits(prev => prev.filter(p => p.id !== id))
     } catch (error) {
       console.error("Erreur lors de la suppression du produit:", error)
-      setError("Impossible de supprimer le produit")
       throw error
     }
   }
 
   const getProduitById = (id: string) => {
-    return produits.find(produit => produit.id === id)
+    return produits.find(p => p.id === id)
   }
 
   const refreshProduits = async () => {
     await loadProduits()
   }
 
+  const value: ProduitsContextType = {
+    produits,
+    addProduit,
+    updateProduit,
+    deleteProduit,
+    getProduitById,
+    isLoading,
+    error,
+    refreshProduits,
+  }
+
   return (
-    <ProduitsContext.Provider
-      value={{
-        produits,
-        addProduit,
-        updateProduit,
-        deleteProduit,
-        getProduitById,
-        isLoading,
-        error,
-        refreshProduits,
-      }}
-    >
+    <ProduitsContext.Provider value={value}>
       {children}
     </ProduitsContext.Provider>
   )
@@ -202,7 +197,7 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
 export function useProduits() {
   const context = useContext(ProduitsContext)
   if (context === undefined) {
-    throw new Error("useProduits must be used within a ProduitsProvider")
+    throw new Error('useProduits must be used within a ProduitsProvider')
   }
   return context
 }

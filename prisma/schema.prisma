@@ -120,6 +120,7 @@ model ShoppingItem {
   name        String    // Nom de l'article
   categoryId  String?   @db.Uuid
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  unit        UnitType? // Unité de mesure (optionnel pour compatibilité)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

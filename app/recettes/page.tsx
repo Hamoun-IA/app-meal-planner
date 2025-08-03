@@ -193,16 +193,17 @@ export default function RecettesPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3">
             {/* Add Recipe Button */}
             <Button
               asChild
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 p-2 md:px-3 md:py-2"
+              title="Ajouter une recette"
             >
               <Link href="/recettes/ajouter">
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter
+                <Plus className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Ajouter</span>
               </Link>
             </Button>
 
