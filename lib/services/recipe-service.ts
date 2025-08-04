@@ -276,7 +276,7 @@ export class RecipeService {
     difficulty?: Difficulty
     search?: string
   } = {}) {
-    const { page = 1, limit = 10, dishType, difficulty, search } = params
+    const { page = 1, limit = 50, dishType, difficulty, search } = params
     const skip = (page - 1) * limit
 
     const where: any = {}

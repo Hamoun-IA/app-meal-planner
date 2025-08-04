@@ -4,7 +4,7 @@ export interface ShoppingListItem {
   quantity: string
   category: string
   completed: boolean
-  fromRecipe?: string // ID de la recette d'origine
+  fromRecipes?: string[] // Noms des recettes d'origine
 }
 
 export class ShoppingListService {
@@ -25,8 +25,28 @@ export class ShoppingListService {
       const stored = localStorage.getItem(this.STORAGE_KEY)
       const items = stored ? JSON.parse(stored) : []
       
+      // Migrer les anciennes données vers le nouveau format
+      let hasMigration = false
+      const migratedItems = items.map((item: any) => {
+        // Si l'item a l'ancien format fromRecipe, le convertir
+        if (item.fromRecipe && !item.fromRecipes) {
+          hasMigration = true
+          return {
+            ...item,
+            fromRecipes: [item.fromRecipe],
+            fromRecipe: undefined // Supprimer l'ancien champ
+          }
+        }
+        return item
+      })
+      
+      // Sauvegarder les données migrées si nécessaire
+      if (hasMigration) {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(migratedItems))
+      }
+      
       // Mapper les catégories vers la DB
-      return items.map((item: ShoppingListItem) => ({
+      return migratedItems.map((item: ShoppingListItem) => ({
         ...item,
         category: this.mapCategoryToDB(item.category)
       }))
@@ -50,7 +70,7 @@ export class ShoppingListService {
         quantity: `${item.quantity} ${item.unit}`,
         category: this.categorizeIngredient(item.name),
         completed: false,
-        fromRecipe: recipeName
+        fromRecipes: [recipeName]
       }))
 
       // Fusionner avec les articles existants (éviter les doublons)
@@ -141,9 +161,16 @@ export class ShoppingListService {
         
         if (existingQuantity && newQuantity && this.normalizeUnit(existingQuantity.unit) === this.normalizeUnit(newQuantity.unit)) {
           const totalQuantity = existingQuantity.amount + newQuantity.amount
+          
+          // Fusionner les recettes d'origine
+          const existingRecipes = existing.fromRecipes || []
+          const newRecipes = newItem.fromRecipes || []
+          const allRecipes = [...new Set([...existingRecipes, ...newRecipes])] // Éviter les doublons
+          
           merged[existingIndex] = {
             ...existing,
-            quantity: `${totalQuantity} ${existingQuantity.unit}`
+            quantity: `${totalQuantity} ${existingQuantity.unit}`,
+            fromRecipes: allRecipes
           }
         } else {
           // Si les unités ne correspondent pas, ajouter comme nouvel article

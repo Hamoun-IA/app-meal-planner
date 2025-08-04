@@ -41,6 +41,9 @@ enum UnitType {
   BOUQUET
   GOUTTE
   PIECE
+  GOUSSE  // Pour l'ail
+  GOUSE   // Variante pour l'ail (compatibilité IA)
+  CM      // Centimètres
   // Add more as needed
 }
 
@@ -150,6 +153,29 @@ model FamilyPreference {
   notes         String?      // Additional info (ex: allergie)
 
   @@map("family_preferences")
+}
+
+// Model for Conversation (persistent chat memory)
+model Conversation {
+  id        String              @id @default(uuid()) @db.Uuid
+  sessionId String              @unique // Identifiant unique de session
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  messages  ConversationMessage[] // Messages de la conversation
+
+  @@map("conversations")
+}
+
+// Model for Conversation Messages
+model ConversationMessage {
+  id             String       @id @default(uuid()) @db.Uuid
+  conversationId String       @db.Uuid
+  role           String       // 'user' ou 'assistant'
+  content        String       // Contenu du message
+  timestamp      DateTime     @default(now())
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("conversation_messages")
 }
 
 // Additional notes:

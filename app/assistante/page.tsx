@@ -6,49 +6,30 @@ import Link from "next/link"
 import { ArrowLeft, Send, Sparkles, Mic } from "lucide-react"
 import { useState } from "react"
 import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
+import { useChat } from "@/hooks/use-chat"
+import { ChatMessageComponent } from "@/components/chat-message"
+import { RecipePopup } from "@/components/recipe-popup"
+import { useRecettes } from "@/contexts/recettes-context"
 
 export default function AssistantePage() {
   const [message, setMessage] = useState("")
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: "Salut ma belle ! 💖 Je suis ton assistante Babounette. Comment puis-je t'aider aujourd'hui ?",
-      isBot: true,
-      time: "10:30",
-    },
-  ])
   const [isRecording, setIsRecording] = useState(false)
-
+  
+  const { messages, sendMessage, isLoading, error, recipePopup } = useChat()
   const { playBackSound } = useAppSoundsSimple()
+  const { refreshRecettes } = useRecettes()
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
     playBackSound()
   }
 
-  const handleSendMessage = () => {
-    if (!message.trim()) return
+  const handleSendMessage = async () => {
+    if (!message.trim() || isLoading) return
 
-    const newMessage = {
-      id: messages.length + 1,
-      text: message,
-      isBot: false,
-      time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-    }
-
-    setMessages([...messages, newMessage])
+    const currentMessage = message
     setMessage("")
-
-    // Simulation de réponse de l'assistante
-    setTimeout(() => {
-      const botResponse = {
-        id: messages.length + 2,
-        text: "C'est une excellente question ! ✨ Laisse-moi réfléchir à la meilleure façon de t'aider avec ça 💕",
-        isBot: true,
-        time: new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }),
-      }
-      setMessages((prev) => [...prev, botResponse])
-    }, 1000)
+    await sendMessage(currentMessage)
   }
 
   const handleVoiceMessage = () => {
@@ -59,6 +40,16 @@ export default function AssistantePage() {
     } else {
       console.log("Arrêt de l'enregistrement vocal...")
       // Ici on pourrait traiter l'audio enregistré
+    }
+  }
+
+  const handleRecipeSaved = async () => {
+    try {
+      console.log('🔄 Rafraîchissement de la liste des recettes...')
+      await refreshRecettes()
+      console.log('✅ Liste des recettes rafraîchie avec succès')
+    } catch (error) {
+      console.error('❌ Erreur lors du rafraîchissement:', error)
     }
   }
 
@@ -99,20 +90,16 @@ export default function AssistantePage() {
       <div className="max-w-4xl mx-auto p-4 pb-24">
         <div className="space-y-4">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex ${msg.isBot ? "justify-start" : "justify-end"} animate-fade-in-up`}>
-              <div
-                className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg ${
-                  msg.isBot
-                    ? "bg-white text-gray-800 rounded-bl-sm"
-                    : "bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-br-sm"
-                }`}
-              >
-                <p className="text-sm">{msg.text}</p>
-                <p className={`text-xs mt-1 ${msg.isBot ? "text-gray-500" : "text-white/70"}`}>{msg.time}</p>
-              </div>
-            </div>
+            <ChatMessageComponent key={msg.id} message={msg} />
           ))}
         </div>
+        
+        {/* Error Display */}
+        {error && (
+          <div className="mt-4 p-3 bg-red-100 border border-red-300 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
       </div>
 
       {/* Input Area */}
@@ -124,9 +111,11 @@ export default function AssistantePage() {
             placeholder="Écris ton message... 💖"
             className="flex-1 rounded-full border-pink-200 focus:border-pink-400"
             onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            disabled={isLoading}
           />
           <Button
             onClick={handleVoiceMessage}
+            disabled={isLoading}
             className={`rounded-full transition-all duration-200 ${
               isRecording
                 ? "bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 animate-pulse"
@@ -137,12 +126,21 @@ export default function AssistantePage() {
           </Button>
           <Button
             onClick={handleSendMessage}
-            className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+            disabled={isLoading || !message.trim()}
+            className="rounded-full bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Send className="w-4 h-4" />
           </Button>
         </div>
       </div>
+
+      {/* Popup de recette */}
+                   <RecipePopup
+               isOpen={recipePopup.isOpen}
+               onClose={recipePopup.closeRecipe}
+               recipe={recipePopup.recipe}
+               onRecipeSaved={handleRecipeSaved}
+             />
     </div>
   )
 }

@@ -413,9 +413,23 @@ export default function CoursesPage() {
                           className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                         />
                         <div className="flex-1 flex items-center space-x-2">
-                          <span className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
-                            {item.name}
-                          </span>
+                          <div className="flex-1">
+                            <span className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
+                              {item.name}
+                            </span>
+                            {item.fromRecipes && item.fromRecipes.length > 0 && (
+                              <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                {item.fromRecipes.map((recipe, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs text-gray-500 bg-gray-100 border border-gray-200"
+                                  >
+                                    {recipe}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <span
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               item.completed

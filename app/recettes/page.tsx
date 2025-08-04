@@ -623,11 +623,18 @@ export default function RecettesPage() {
             {filteredAndSortedRecettes.map((recette, index) => (
               <div
                 key={recette.id}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 animate-fade-in-up"
+                className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 animate-fade-in-up relative group sm:hover:shadow-xl"
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
-                <div className="flex items-center p-4">
-                  <div className="relative flex-shrink-0 w-20 h-20 mr-4">
+                {/* Lien cliquable sur mobile qui couvre toute la carte */}
+                <Link 
+                  href={`/recettes/${recette.id}`}
+                  className="absolute inset-0 z-10 sm:hidden"
+                  onClick={() => playClickSound()}
+                />
+                
+                <div className="flex items-center p-3 sm:p-4">
+                  <div className="relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 mr-3 sm:mr-4">
                     <img
                       src={recette.imageUrl || "/placeholder.svg?height=80&width=80&query=recette"}
                       alt={recette.name}
@@ -643,9 +650,9 @@ export default function RecettesPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-1 truncate">{recette.name}</h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-base sm:text-lg text-gray-800 mb-1 truncate">{recette.name}</h3>
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-600 mb-2">
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
                             <span>
@@ -666,15 +673,15 @@ export default function RecettesPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center space-x-2 ml-4">
+                      <div className="flex items-center space-x-1 sm:space-x-2 ml-2 sm:ml-4 flex-shrink-0 relative z-20">
                         <Button
                           asChild
                           size="sm"
                           variant="ghost"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-1 sm:p-2"
                         >
                           <Link href={`/recettes/${recette.id}/modifier`}>
-                            <Edit2 className="w-4 h-4" />
+                            <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
                           </Link>
                         </Button>
                         <Button
@@ -684,14 +691,15 @@ export default function RecettesPage() {
                             playClickSound()
                             setShowDeleteConfirm(recette.id)
                           }}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1 sm:p-2"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
                         </Button>
+                        {/* Bouton "Voir" caché sur mobile, visible sur desktop */}
                         <Button
                           asChild
                           size="sm"
-                          className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 flex-shrink-0"
+                          className="hidden sm:flex bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-600 flex-shrink-0 text-sm px-3"
                         >
                           <Link href={`/recettes/${recette.id}`}>Voir</Link>
                         </Button>
