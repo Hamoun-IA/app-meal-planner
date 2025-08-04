@@ -78,6 +78,16 @@ export class ApiService {
     })
   }
 
+  async toggleLikeRecette(id: string): Promise<ApiResponse<any>> {
+    return this.request(`/recipes/${id}/toggle-like`, {
+      method: 'POST',
+    })
+  }
+
+  async getFavorites(): Promise<ApiResponse<{ recipes: any[]; total: number }>> {
+    return this.request('/recipes/favorites')
+  }
+
   // Ingrédients
   async getIngredients(params?: {
     page?: number

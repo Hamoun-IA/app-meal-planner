@@ -68,6 +68,7 @@ model Recipe {
   tips              String?           // Conseils (optional)
   imageUrl          String?           // URL de l'image de la recette
   servings          Int?              // Nombre de portions (default: 4)
+  liked             Boolean           @default(false) // Favori de l'utilisateur
   embedding         String?           @db.Text // Embedding vector for RAG (stored as JSON string)
   ingredients       RecipeIngredient[] // Many-to-many relation to Ingredients via junction table
   mealHistories     MealHistory[]     // References in MealHistory

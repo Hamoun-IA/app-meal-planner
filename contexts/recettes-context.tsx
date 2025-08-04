@@ -65,7 +65,7 @@ export function RecettesProvider({ children }: { children: ReactNode }) {
           ingredients: recipe.ingredients || [],
           instructions: recipe.instructions || [],
           tips: recipe.tips || '',
-          liked: false, // Valeur par défaut
+          liked: recipe.liked || false, // Utiliser la valeur de la DB
           createdAt: recipe.createdAt || new Date().toISOString(),
           updatedAt: recipe.updatedAt || new Date().toISOString(),
         }))
@@ -168,11 +168,20 @@ export function RecettesProvider({ children }: { children: ReactNode }) {
 
   const toggleLike = async (id: string) => {
     try {
-      const recette = getRecetteById(id)
-      if (recette) {
-        await updateRecette(id, { liked: !recette.liked })
+      setError(null)
+      
+      const response = await apiService.toggleLikeRecette(id)
+      
+      if (response.error) {
+        setError(response.error)
+        throw new Error(response.error)
+      } else if (response.data) {
+        // Recharger les recettes pour avoir les données fraîches
+        await loadRecettes()
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du toggle like'
+      setError(errorMessage)
       console.error('Erreur lors du toggle like:', error)
     }
   }
