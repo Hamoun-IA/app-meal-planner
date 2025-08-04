@@ -30,7 +30,7 @@ import { useRecettes } from "@/contexts/recettes-context"
 export default function RecettesPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const { playBackSound, playClickSound } = useAppSoundsSimple()
-  const { recettes, deleteRecette, toggleLike, isLoading } = useRecettes()
+  const { recettes, deleteRecette, toggleLike, isLoading, error } = useRecettes()
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState<"alphabetical" | "time" | "date" | null>(null)
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc")
@@ -40,22 +40,30 @@ export default function RecettesPage() {
   })
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [expandedFilter, setExpandedFilter] = useState<"difficulty" | "category" | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
 
   const handleBackClick = () => {
     console.log("Back button clicked!")
     playBackSound()
   }
 
-  const handleDeleteRecette = (id: number) => {
-    playClickSound()
-    deleteRecette(id)
-    setShowDeleteConfirm(null)
+  const handleDeleteRecette = async (id: string) => {
+    try {
+      playClickSound()
+      await deleteRecette(id)
+      setShowDeleteConfirm(null)
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error)
+    }
   }
 
-  const handleLikeToggle = (id: number) => {
-    playClickSound()
-    toggleLike(id)
+  const handleLikeToggle = async (id: string) => {
+    try {
+      playClickSound()
+      await toggleLike(id)
+    } catch (error) {
+      console.error('Erreur lors du toggle like:', error)
+    }
   }
 
   const handleFilterChange = (filterType: string, value: string) => {
@@ -76,11 +84,11 @@ export default function RecettesPage() {
 
   const filteredRecettes = recettes.filter((recette) => {
     const matchesSearch =
-      recette.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      recette.category.toLowerCase().includes(searchTerm.toLowerCase())
+      recette.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (recette.category && recette.category.toLowerCase().includes(searchTerm.toLowerCase()))
 
-    const matchesDifficulty = filters.difficulty.length === 0 || filters.difficulty.includes(recette.difficulty)
-    const matchesCategory = filters.category.length === 0 || filters.category.includes(recette.category)
+    const matchesDifficulty = filters.difficulty.length === 0 || (recette.difficulty && filters.difficulty.includes(recette.difficulty))
+    const matchesCategory = filters.category.length === 0 || (recette.category && filters.category.includes(recette.category))
 
     return matchesSearch && matchesDifficulty && matchesCategory
   })
@@ -91,13 +99,15 @@ export default function RecettesPage() {
     let comparison = 0
 
     if (sortBy === "alphabetical") {
-      comparison = a.title.localeCompare(b.title)
+      comparison = a.name.localeCompare(b.name)
     } else if (sortBy === "time") {
-      const timeA = Number.parseInt(a.prepTime.replace(" min", "")) + Number.parseInt(a.cookTime.replace(" min", ""))
-      const timeB = Number.parseInt(b.prepTime.replace(" min", "")) + Number.parseInt(b.cookTime.replace(" min", ""))
+      const timeA = (a.prepTime || 0) + (a.cookTime || 0)
+      const timeB = (b.prepTime || 0) + (b.cookTime || 0)
       comparison = timeA - timeB
     } else if (sortBy === "date") {
-      comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+      const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+      comparison = dateA - dateB
     }
 
     return sortOrder === "asc" ? comparison : -comparison
@@ -183,16 +193,17 @@ export default function RecettesPage() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 md:space-x-3">
             {/* Add Recipe Button */}
             <Button
               asChild
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 p-2 md:px-3 md:py-2"
+              title="Ajouter une recette"
             >
               <Link href="/recettes/ajouter">
-                <Plus className="w-4 h-4 mr-2" />
-                Ajouter
+                <Plus className="w-4 h-4 md:mr-2" />
+                <span className="hidden md:inline">Ajouter</span>
               </Link>
             </Button>
 
@@ -511,7 +522,26 @@ export default function RecettesPage() {
         </div>
 
         {/* Recipe Display */}
-        {viewMode === "grid" ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-pink-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Chargement des recettes...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-red-500" />
+            </div>
+            <p className="text-red-600 text-lg mb-2">Erreur lors du chargement</p>
+            <p className="text-gray-500 mb-4">{error}</p>
+            <Button
+              onClick={() => window.location.reload()}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600"
+            >
+              Réessayer
+            </Button>
+          </div>
+        ) : viewMode === "grid" ? (
           // Mode Grille
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {filteredAndSortedRecettes.map((recette, index) => (
@@ -522,8 +552,8 @@ export default function RecettesPage() {
               >
                 <div className="relative">
                   <img
-                    src={recette.image || "/placeholder.svg?height=200&width=300&query=recette"}
-                    alt={recette.title}
+                    src={recette.imageUrl || "/placeholder.svg?height=200&width=300&query=recette"}
+                    alt={recette.name}
                     className="w-full h-48 object-cover"
                   />
                   <button
@@ -559,13 +589,12 @@ export default function RecettesPage() {
                 </div>
 
                 <div className="p-4">
-                  <h3 className="font-semibold text-lg text-gray-800 mb-2">{recette.title}</h3>
+                  <h3 className="font-semibold text-lg text-gray-800 mb-2">{recette.name}</h3>
                   <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
                     <div className="flex items-center space-x-1">
                       <Clock className="w-4 h-4" />
                       <span>
-                        {Number.parseInt(recette.prepTime.replace(" min", "")) +
-                          Number.parseInt(recette.cookTime.replace(" min", ""))}{" "}
+                        {(recette.prepTime || 0) + (recette.cookTime || 0)}{" "}
                         min
                       </span>
                     </div>
@@ -600,8 +629,8 @@ export default function RecettesPage() {
                 <div className="flex items-center p-4">
                   <div className="relative flex-shrink-0 w-20 h-20 mr-4">
                     <img
-                      src={recette.image || "/placeholder.svg?height=80&width=80&query=recette"}
-                      alt={recette.title}
+                      src={recette.imageUrl || "/placeholder.svg?height=80&width=80&query=recette"}
+                      alt={recette.name}
                       className="w-full h-full object-cover rounded-xl"
                     />
                     <button
@@ -615,13 +644,12 @@ export default function RecettesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg text-gray-800 mb-1 truncate">{recette.title}</h3>
+                        <h3 className="font-semibold text-lg text-gray-800 mb-1 truncate">{recette.name}</h3>
                         <div className="flex items-center space-x-4 text-sm text-gray-600 mb-2">
                           <div className="flex items-center space-x-1">
                             <Clock className="w-3 h-3" />
                             <span>
-                              {Number.parseInt(recette.prepTime.replace(" min", "")) +
-                                Number.parseInt(recette.cookTime.replace(" min", ""))}{" "}
+                              {(recette.prepTime || 0) + (recette.cookTime || 0)}{" "}
                               min
                             </span>
                           </div>

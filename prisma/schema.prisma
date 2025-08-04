@@ -66,12 +66,12 @@ model Recipe {
   dishType          DishType?         // Type de plat
   instructions      String[]          // Instructions: array of strings for structured steps
   tips              String?           // Conseils (optional)
-  embedding         Vector(768)?      @db.Vector(768) // Embedding vector for RAG (OpenAI text-embedding-3-small with 768 dims)
+  imageUrl          String?           // URL de l'image de la recette
+  servings          Int?              // Nombre de portions (default: 4)
+  embedding         String?           @db.Text // Embedding vector for RAG (stored as JSON string)
   ingredients       RecipeIngredient[] // Many-to-many relation to Ingredients via junction table
   mealHistories     MealHistory[]     // References in MealHistory
-  familyPreferences FamilyPreference[] // References in FamilyPreference (for targetType = RECIPE)
 
-  @@index([embedding(vector_cosine_ops)], type: Hnsw)
   @@map("recipes")
 }
 
@@ -93,22 +93,22 @@ model RecipeIngredient {
 model Ingredient {
   id          String            @id @default(uuid()) @db.Uuid
   name        String            // Nom de l'ingrédient (standardized)
-  category    String?           // Catégorie (ex: Viandes, Légumes)
+  categoryId  String?           @db.Uuid // Foreign key to Category
+  category    Category?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   units       UnitType[]        // Array of applicable units (since multiple units per ingredient)
-  embedding   Vector(768)?      @db.Vector(768) // Optional: Embedding for semantic search on ingredients
+  embedding   String?           @db.Text // Optional: Embedding for semantic search on ingredients (stored as JSON string)
   recipes     RecipeIngredient[] // Many-to-many relation
-  familyPreferences FamilyPreference[] // References in FamilyPreference (for targetType = INGREDIENT)
 
-  @@index([embedding(vector_cosine_ops)], type: Hnsw)
   @@map("ingredients")
 }
 
 // Model for Categories (for shopping list and possibly ingredients)
 model Category {
   id             String           @id @default(uuid()) @db.Uuid
-  name           String           // Nom de la catégorie (ex: Fruits, Épicerie)
+  name           String           @unique // Contrainte unique pour éviter les doublons
   linkedItemId   String?          @db.Uuid // Optional liaison to Ingredient or ShoppingItem ID
   linkedItemType String?          // To specify if linked to 'ingredient' or 'shopping_item'
+  ingredients    Ingredient[]     // Relation to Ingredients
   shoppingItems  ShoppingItem[]   // Relation to ShoppingItems
 
   @@map("categories")
@@ -120,6 +120,9 @@ model ShoppingItem {
   name        String    // Nom de l'article
   categoryId  String?   @db.Uuid
   category    Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  unit        UnitType? // Unité de mesure (optionnel pour compatibilité)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@map("shopping_items")
 }
@@ -144,12 +147,6 @@ model FamilyPreference {
   targetType    TargetType   // ingredient or recipe
   targetId      String       @db.Uuid // ID of the target (Ingredient or Recipe)
   notes         String?      // Additional info (ex: allergie)
-
-  // Conditional relations (Prisma doesn't support polymorphic, so use manual checks in code)
-  // For targetType = INGREDIENT
-  ingredient    Ingredient?  @relation(fields: [targetId], references: [id])
-  // For targetType = RECIPE
-  recipe        Recipe?      @relation(fields: [targetId], references: [id])
 
   @@map("family_preferences")
 }
