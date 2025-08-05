@@ -276,7 +276,7 @@ export class RecipeService {
     difficulty?: Difficulty
     search?: string
   } = {}) {
-    const { page = 1, limit = 10, dishType, difficulty, search } = params
+    const { page = 1, limit = 50, dishType, difficulty, search } = params
     const skip = (page - 1) * limit
 
     const where: any = {}
@@ -425,6 +425,40 @@ export class RecipeService {
     return { message: 'Recette supprimée avec succès' }
   }
 
+  async toggleLike(id: string) {
+    const recipe = await this.findById(id)
+    
+    const updatedRecipe = await prisma.recipe.update({
+      where: { id },
+      data: { liked: !recipe.liked },
+      include: {
+        ingredients: {
+          include: {
+            ingredient: true,
+          },
+        },
+      },
+    })
+
+    return updatedRecipe
+  }
+
+  async getFavorites() {
+    const recipes = await prisma.recipe.findMany({
+      where: { liked: true },
+      include: {
+        ingredients: {
+          include: {
+            ingredient: true,
+          },
+        },
+      },
+      orderBy: { name: 'asc' },
+    })
+
+    return recipes
+  }
+
   private calculateCosineSimilarity(vec1: number[], vec2: number[]): number {
     if (vec1.length !== vec2.length) return 0
     
@@ -467,4 +501,7 @@ export class RecipeService {
 
     return results
   }
-} 
+}
+
+// Export une instance du service
+export const recipeService = new RecipeService()

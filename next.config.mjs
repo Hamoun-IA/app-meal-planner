@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Configuration pour Docker standalone
+  output: 'standalone',
+  
   // Configuration PWA
   async headers() {
     return [

@@ -296,11 +296,11 @@ export default function CoursesPage() {
       </div>
 
       <div className="max-w-4xl mx-auto p-4">
-        {/* Add Item */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up">
+        {/* Add Item - Desktop */}
+        <div className="hidden md:block bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up">
           <div className="space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-              <div className="md:col-span-2">
+            <div className="grid grid-cols-4 gap-3">
+              <div className="col-span-2">
                 <Autocomplete
                   options={produitOptions}
                   value={selectedProduit}
@@ -371,6 +371,83 @@ export default function CoursesPage() {
           </div>
         </div>
 
+        {/* Add Item - Mobile Compact */}
+        <div className="md:hidden bg-white rounded-2xl shadow-lg p-4 mb-6 animate-fade-in-up">
+          <div className="flex items-center space-x-3">
+            <div className="flex-1">
+              <Autocomplete
+                options={produitOptions}
+                value={selectedProduit}
+                onValueChange={setSelectedProduit}
+                onSelect={handleProduitSelect}
+                placeholder="Produit ou ingrédient..."
+                disabled={produits.length === 0 && ingredients.length === 0}
+                maxSuggestions={6}
+              />
+            </div>
+            <Button
+              onClick={addItemFromProduit}
+              disabled={!selectedProduitId || !newQuantity.trim() || !selectedUnit}
+              className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 disabled:opacity-50 p-2"
+              title="Ajouter un produit"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Mobile: Show quantity and unit when product is selected */}
+          {selectedProduitId && (
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Input
+                value={newQuantity}
+                onChange={(e) => setNewQuantity(e.target.value)}
+                placeholder="Quantité"
+                className="border-pink-200 focus:border-pink-400"
+                onKeyPress={(e) => e.key === "Enter" && addItemFromProduit()}
+              />
+              <div className="relative">
+                {hasMultipleUnits ? (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUnitDropdown(!showUnitDropdown)
+                        playClickSound()
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <span className="text-sm font-medium text-gray-700">
+                        {selectedUnit}
+                      </span>
+                      <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showUnitDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showUnitDropdown && (
+                      <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                        {availableUnits.map((unit) => (
+                          <button
+                            key={unit}
+                            onClick={() => handleUnitSelect(unit)}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-50 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                          >
+                            <span className="text-sm font-medium text-gray-700">{unit}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-sm font-medium text-gray-700">
+                      {selectedUnit}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Loading state */}
         {(shoppingLoading || categoriesLoading || ingredientsLoading) && (
           <div className="text-center py-12">
@@ -413,9 +490,23 @@ export default function CoursesPage() {
                           className="data-[state=checked]:bg-pink-500 data-[state=checked]:border-pink-500"
                         />
                         <div className="flex-1 flex items-center space-x-2">
-                          <span className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
-                            {item.name}
-                          </span>
+                          <div className="flex-1">
+                            <span className={`${item.completed ? "line-through text-gray-500" : "text-gray-800"}`}>
+                              {item.name}
+                            </span>
+                            {item.fromRecipes && item.fromRecipes.length > 0 && (
+                              <div className="flex flex-wrap gap-0.5 mt-0.5">
+                                {item.fromRecipes.map((recipe, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs text-gray-500 bg-gray-100 border border-gray-200"
+                                  >
+                                    {recipe}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                           <span
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
                               item.completed

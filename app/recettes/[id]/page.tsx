@@ -24,6 +24,7 @@ import { useRecettes } from "@/contexts/recettes-context"
 import { useRouter } from "next/navigation"
 import { apiService } from "@/lib/services/api-service"
 import { shoppingListService } from "@/lib/services/shopping-list-service"
+import { useToast } from "@/hooks/use-toast"
 
 interface RecettePageProps {
   params: Promise<{
@@ -35,6 +36,7 @@ export default function RecettePage({ params }: RecettePageProps) {
   const { playBackSound, playClickSound } = useAppSoundsSimple()
   const { deleteRecette, toggleLike } = useRecettes()
   const router = useRouter()
+  const { toast } = useToast()
   const [servings, setServings] = useState(4)
   const [originalServings, setOriginalServings] = useState(4)
   const [ingredients, setIngredients] = useState<Array<{ name: string; quantity: number; unit: string; checked: boolean; originalQuantity: number }>>([])
@@ -168,7 +170,11 @@ export default function RecettePage({ params }: RecettePageProps) {
     const checkedIngredients = ingredients.filter(ingredient => ingredient.checked)
     
     if (checkedIngredients.length === 0) {
-      alert('Veuillez cocher au moins un ingrédient à ajouter à votre liste de courses.')
+      toast({
+        title: "Aucun ingrédient sélectionné",
+        description: "Veuillez cocher au moins un ingrédient à ajouter à votre liste de courses.",
+        variant: "destructive",
+      })
       return
     }
     
@@ -182,8 +188,18 @@ export default function RecettePage({ params }: RecettePageProps) {
       recette.name
     )
     
-    // Afficher une confirmation
-    alert(`${checkedIngredients.length} ingrédient${checkedIngredients.length > 1 ? 's' : ''} ajouté${checkedIngredients.length > 1 ? 's' : ''} à votre liste de courses !`)
+    // Décocher tous les ingrédients
+    setIngredients(prev => prev.map(ingredient => ({
+      ...ingredient,
+      checked: false
+    })))
+    
+    // Afficher une notification toast
+    toast({
+      title: "Ingrédients ajoutés !",
+      description: `${checkedIngredients.length} ingrédient${checkedIngredients.length > 1 ? 's' : ''} ajouté${checkedIngredients.length > 1 ? 's' : ''} à votre liste de courses.`,
+      variant: "default",
+    })
   }
 
   // État de chargement
@@ -430,21 +446,18 @@ export default function RecettePage({ params }: RecettePageProps) {
             {/* Ingredients Tab */}
             {activeTab === "ingredients" && (
               <div className="space-y-3">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold text-gray-800">
-                      Ingrédients pour {servings} portion{servings > 1 ? "s" : ""}
-                    </h3>
-                    {servings !== originalServings && (
-                      <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs font-medium">
-                        Quantités ajustées
-                      </span>
-                    )}
-                  </div>
-                  <span className="text-sm text-gray-500">
-                    {ingredients.filter((i) => i.checked).length}/{ingredients.length} cochés
-                  </span>
-                </div>
+                                 <div className="flex items-center justify-between mb-4">
+                   <div className="flex items-center space-x-2">
+                     <h3 className="text-lg font-semibold text-gray-800">
+                       Ingrédients pour {servings} portion{servings > 1 ? "s" : ""}
+                     </h3>
+                     {servings !== originalServings && (
+                       <span className="bg-pink-100 text-pink-700 px-2 py-1 rounded-full text-xs font-medium">
+                         Quantités ajustées
+                       </span>
+                     )}
+                   </div>
+                 </div>
                 {ingredients.map((ingredient, index) => (
                   <div
                     key={index}
