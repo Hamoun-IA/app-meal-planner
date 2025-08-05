@@ -1,8 +1,11 @@
 # Dockerfile multi-stage pour Next.js 14
-FROM node:18-alpine AS base
+FROM node:18-slim AS base
 
 # Installer les dépendances nécessaires
-RUN apk add --no-cache libc6-compat openssl1.1-compat
+RUN apt-get update && apt-get install -y \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Étape de dépendances
 FROM base AS deps
@@ -32,8 +35,8 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Créer un utilisateur non-root
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN groupadd --system --gid 1001 nodejs
+RUN useradd --system --uid 1001 nextjs
 
 # Copier les fichiers nécessaires
 COPY --from=builder /app/public ./public
