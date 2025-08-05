@@ -1,176 +1,155 @@
 #!/bin/bash
 
-# Script de déploiement pour Meal Planner App
+# Script de déploiement automatisé pour Meal Planner
 set -e
 
-echo "🚀 Démarrage du déploiement..."
-
-# Variables
-PROJECT_NAME="meal-planner"
-DOMAIN=${1:-"localhost"}
-
-# Couleurs pour les logs
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Fonction de log
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-warn() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+# Vérifier les arguments
+if [ $# -eq 0 ]; then
+    echo "Usage: $0 <domaine>"
+    echo "Exemple: $0 meal-planner.votre-domaine.com"
     exit 1
-}
+fi
+
+DOMAIN=$1
+
+echo "🚀 Déploiement de Meal Planner sur $DOMAIN"
 
 # Vérifier les prérequis
 check_prerequisites() {
-    log "Vérification des prérequis..."
+    echo "📋 Vérification des prérequis..."
     
     if ! command -v docker &> /dev/null; then
-        error "Docker n'est pas installé"
+        echo "❌ Docker n'est pas installé"
+        exit 1
     fi
     
     if ! command -v docker-compose &> /dev/null; then
-        error "Docker Compose n'est pas installé"
+        echo "❌ Docker Compose n'est pas installé"
+        exit 1
     fi
     
-    if [ ! -f ".env" ]; then
-        error "Fichier .env manquant. Copiez .env.example vers .env et configurez les variables."
-    fi
-    
-    log "✅ Prérequis vérifiés"
+    echo "✅ Prérequis vérifiés"
 }
 
-# Créer les certificats SSL auto-signés pour le développement
+# Configuration SSL
 setup_ssl() {
-    log "Configuration SSL..."
+    echo "🔒 Configuration SSL..."
     
-    if [ ! -d "ssl" ]; then
-        mkdir -p ssl
-    fi
+    # Créer le dossier SSL
+    mkdir -p ssl
     
-    if [ ! -f "ssl/cert.pem" ] || [ ! -f "ssl/key.pem" ]; then
-        log "Génération de certificats SSL auto-signés..."
+    # Générer un certificat auto-signé pour les tests
+    if [ ! -f ssl/cert.pem ]; then
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout ssl/key.pem \
-            -out ssl/cert.pem \
-            -subj "/C=FR/ST=IDF/L=Paris/O=MealPlanner/CN=$DOMAIN"
+            -keyout ssl/key.pem -out ssl/cert.pem \
+            -subj "/C=FR/ST=France/L=Paris/O=MealPlanner/CN=$DOMAIN"
+        echo "✅ Certificat SSL généré"
     fi
-    
-    log "✅ SSL configuré"
 }
 
-# Build et déploiement
-deploy() {
-    log "Démarrage du déploiement..."
+# Configuration des variables d'environnement
+setup_env() {
+    echo "⚙️ Configuration des variables d'environnement..."
+    
+    # Créer le fichier .env s'il n'existe pas
+    if [ ! -f .env ]; then
+        cat > .env << EOF
+# Configuration de la base de données
+DB_PASSWORD=mealpass123
+
+# Configuration OpenAI
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Configuration utilisateur
+DEFAULT_USER_ID=00000000-0000-0000-0000-000000000000
+
+# Configuration du domaine
+DOMAIN=$DOMAIN
+EOF
+        echo "⚠️  Fichier .env créé. Veuillez configurer votre clé OpenAI API."
+    else
+        # Mettre à jour le domaine dans .env
+        sed -i "s/DOMAIN=.*/DOMAIN=$DOMAIN/" .env
+        echo "✅ Domaine mis à jour dans .env"
+    fi
+}
+
+# Déploiement Docker
+deploy_docker() {
+    echo "🐳 Déploiement des conteneurs..."
     
     # Arrêter les conteneurs existants
-    log "Arrêt des conteneurs existants..."
-    docker-compose -f docker-compose.prod.yml down || true
+    docker-compose -f docker-compose.prod.yml down
     
-    # Nettoyer les images anciennes
-    log "Nettoyage des images Docker..."
-    docker system prune -f
+    # Reconstruire l'image
+    docker-compose -f docker-compose.prod.yml build --no-cache
     
-    # Build et démarrage
-    log "Build et démarrage des services..."
-    docker-compose -f docker-compose.prod.yml up -d --build
+    # Démarrer les services
+    docker-compose -f docker-compose.prod.yml up -d
     
-    # Attendre que les services soient prêts
-    log "Attente du démarrage des services..."
-    sleep 30
-    
-    # Initialiser la base de données
-    log "Initialisation de la base de données..."
-    chmod +x init-db.sh
-    ./init-db.sh
-    
-    # Vérifier la santé des services
-    check_health
+    echo "✅ Conteneurs déployés"
 }
 
-# Vérifier la santé des services
-check_health() {
-    log "Vérification de la santé des services..."
-    
-    # Vérifier PostgreSQL
-    if docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U mealuser > /dev/null 2>&1; then
-        log "✅ PostgreSQL est prêt"
-    else
-        error "❌ PostgreSQL n'est pas prêt"
-    fi
-    
-    # Vérifier Redis
-    if docker-compose -f docker-compose.prod.yml exec -T redis redis-cli ping > /dev/null 2>&1; then
-        log "✅ Redis est prêt"
-    else
-        error "❌ Redis n'est pas prêt"
-    fi
-    
-    # Vérifier l'application
-    if curl -f http://localhost/health > /dev/null 2>&1; then
-        log "✅ Application est prête"
-    else
-        warn "⚠️ Application pas encore prête, attente..."
-        sleep 10
-        if curl -f http://localhost/health > /dev/null 2>&1; then
-            log "✅ Application est maintenant prête"
-        else
-            error "❌ Application ne répond pas"
-        fi
-    fi
-}
-
-# Appliquer les migrations de base de données
-setup_database() {
-    log "Configuration de la base de données..."
+# Initialisation de la base de données
+init_database() {
+    echo "🗄️ Initialisation de la base de données..."
     
     # Attendre que PostgreSQL soit prêt
-    log "Attente de PostgreSQL..."
+    echo "⏳ Attente de PostgreSQL..."
     until docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U mealuser > /dev/null 2>&1; do
         sleep 2
     done
     
-    # Appliquer les migrations
-    log "Application des migrations Prisma..."
-    docker-compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
+    # Exécuter le script d'initialisation
+    ./init-db.sh
     
-    # Générer le client Prisma
-    log "Génération du client Prisma..."
-    docker-compose -f docker-compose.prod.yml exec -T app npx prisma generate
-    
-    log "✅ Base de données configurée"
+    echo "✅ Base de données initialisée"
 }
 
-# Afficher les informations de déploiement
+# Vérification de la santé
+health_check() {
+    echo "🏥 Vérification de la santé de l'application..."
+    
+    # Attendre que l'application soit prête
+    echo "⏳ Attente de l'application..."
+    until curl -f http://localhost/api/recipes > /dev/null 2>&1; do
+        sleep 5
+    done
+    
+    echo "✅ Application accessible"
+}
+
+# Affichage des informations
 show_info() {
-    log "🎉 Déploiement terminé avec succès!"
     echo ""
-    echo "📊 Informations de déploiement:"
-    echo "   - Application: http://$DOMAIN"
-    echo "   - Health check: http://$DOMAIN/health"
-    echo "   - Logs: docker-compose -f docker-compose.prod.yml logs -f"
+    echo "🎉 Déploiement terminé !"
     echo ""
-    echo "🔧 Commandes utiles:"
-    echo "   - Arrêter: docker-compose -f docker-compose.prod.yml down"
-    echo "   - Logs: docker-compose -f docker-compose.prod.yml logs -f app"
-    echo "   - Restart: docker-compose -f docker-compose.prod.yml restart app"
+    echo "📱 Application accessible sur :"
+    echo "   🌐 https://$DOMAIN"
+    echo "   🔧 http://localhost (sans SSL)"
     echo ""
+    echo "📊 Logs des conteneurs :"
+    echo "   docker-compose -f docker-compose.prod.yml logs -f"
+    echo ""
+    echo "🛠️  Commandes utiles :"
+    echo "   - Arrêter : docker-compose -f docker-compose.prod.yml down"
+    echo "   - Redémarrer : docker-compose -f docker-compose.prod.yml restart"
+    echo "   - Logs : docker-compose -f docker-compose.prod.yml logs -f app"
+    echo ""
+    echo "⚠️  N'oubliez pas de :"
+    echo "   1. Configurer votre clé OpenAI API dans .env"
+    echo "   2. Configurer un vrai certificat SSL pour la production"
+    echo "   3. Configurer votre DNS pour pointer vers ce serveur"
 }
 
 # Fonction principale
 main() {
     check_prerequisites
     setup_ssl
-    deploy
-    setup_database
+    setup_env
+    deploy_docker
+    init_database
+    health_check
     show_info
 }
 
