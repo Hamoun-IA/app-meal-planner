@@ -34,8 +34,8 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        - NEXT_PUBLIC_API_URL=https://${DOMAIN:-localhost}/api
-        - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-localhost}
+        - NEXT_PUBLIC_API_URL=https://${DOMAIN:-appmeal.hamoun.fun}/api
+        - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-appmeal.hamoun.fun}
     container_name: meal-planner-app
     environment:
       - DATABASE_URL=postgresql://mealuser:${DB_PASSWORD:-mealpass123}@postgres:5432/mealdb
@@ -43,21 +43,29 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - DEFAULT_USER_ID=${DEFAULT_USER_ID:-00000000-0000-0000-0000-000000000000}
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=https://${DOMAIN:-localhost}/api
-      - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-localhost}
+      - NEXT_PUBLIC_API_URL=https://${DOMAIN:-appmeal.hamoun.fun}/api
+      - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-appmeal.hamoun.fun}
     volumes:
       - ./uploads:/app/public/uploads
       - ./prisma:/app/prisma
     labels:
+      # Activation de Traefik
       - "traefik.enable=true"
-      - "traefik.http.routers.meal.rule=Host(`appmeal.hamoun.fun`)"
-      - "traefik.http.routers.meal.entrypoints=web,websecure"
-      - "traefik.http.routers.meal.tls.certresolver=mytlschallenge"
+      # Router principal
+      - "traefik.http.routers.meal.rule=Host(`${DOMAIN:-appmeal.hamoun.fun}`)"
+      - "traefik.http.routers.meal.entrypoints=websecure"
+      - "traefik.http.routers.meal.tls.certresolver=letsencrypt"
       - "traefik.http.services.meal.loadbalancer.server.port=3001"
-      - "traefik.http.routers.meal.tls=true"
+      # Redirection HTTP vers HTTPS
+      - "traefik.http.routers.meal-http.rule=Host(`${DOMAIN:-appmeal.hamoun.fun}`)"
+      - "traefik.http.routers.meal-http.entrypoints=web"
+      - "traefik.http.routers.meal-http.middlewares=redirect-to-https"
+      # Middleware de redirection
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       # Headers pour le proxy
       - "traefik.http.middlewares.meal-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
-      - "traefik.http.middlewares.meal-headers.headers.customrequestheaders.X-Forwarded-Host=Host"
+      - "traefik.http.middlewares.meal-headers.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN:-appmeal.hamoun.fun}"
       - "traefik.http.routers.meal.middlewares=meal-headers"
       # Headers spécifiques PWA
       - "traefik.http.middlewares.meal-pwa.headers.customresponseheaders.Service-Worker-Allowed=/"
@@ -68,7 +76,11 @@ services:
       - "traefik.http.middlewares.meal-security.headers.customresponseheaders.X-Content-Type-Options=nosniff"
       - "traefik.http.middlewares.meal-security.headers.customresponseheaders.X-Frame-Options=DENY"
       - "traefik.http.middlewares.meal-security.headers.customresponseheaders.X-XSS-Protection=1; mode=block"
+      - "traefik.http.middlewares.meal-security.headers.customresponseheaders.Referrer-Policy=strict-origin-when-cross-origin"
       - "traefik.http.routers.meal.middlewares=meal-security"
+      # Compression
+      - "traefik.http.middlewares.meal-compress.compress=true"
+      - "traefik.http.routers.meal.middlewares=meal-compress"
     depends_on:
       - postgres
       - redis
@@ -76,22 +88,6 @@ services:
     networks:
       - meal-planner-network
       - traefik-net
-
-  # Nginx reverse proxy
-  #nginx:
-  #  image: nginx:alpine
-  #  container_name: meal-planner-nginx
-  #  ports:
-  #    - "80:80"
-  #    - "443:443"
-  #  volumes:
-  #    - ./nginx.conf:/etc/nginx/nginx.conf
-  #    - ./ssl:/etc/nginx/ssl
-  #  depends_on:
-  #    - app
-  #  restart: unless-stopped
-  #  networks:
-  #    - meal-planner-network
 
 volumes:
   postgres_data:
@@ -102,4 +98,4 @@ networks:
     driver: bridge 
   traefik-net:
     external:
-      name: root_default
+      name: root_traefik_1 
