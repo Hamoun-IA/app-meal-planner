@@ -98,4 +98,4 @@ networks:
     driver: bridge 
   traefik-net:
     external:
-      name: root_traefik_1 
+      name: root_default 

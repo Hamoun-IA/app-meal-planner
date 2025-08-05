@@ -37,8 +37,8 @@ check_prerequisites() {
     fi
     
     # Vérifier que Traefik est en cours d'exécution
-    if ! docker network ls | grep -q "root_traefik_1"; then
-        echo -e "${RED}❌ Le réseau Traefik 'root_traefik_1' n'existe pas${NC}"
+    if ! docker network ls | grep -q "root_default"; then
+        echo -e "${RED}❌ Le réseau Traefik 'root_default' n'existe pas${NC}"
         echo -e "${YELLOW}Assurez-vous que Traefik est en cours d'exécution sur votre VPS${NC}"
         exit 1
     fi
