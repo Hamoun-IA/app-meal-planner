@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
             
             try {
               // Générer la recette avec l'agent Chef
-              const recipeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ai/generate-recipe`, {
+              const recipeResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'}/api/ai/generate-recipe`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
