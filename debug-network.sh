@@ -32,18 +32,17 @@ check_networks() {
 test_connectivity() {
     echo -e "${BLUE}🔌 Test de connectivité depuis meal-planner-app:${NC}"
     
-    # Test PostgreSQL
+    # Test PostgreSQL avec wget (disponible dans le conteneur)
     echo -e "${YELLOW}📊 Test PostgreSQL:${NC}"
-    docker exec meal-planner-app ping -c 1 postgres 2>/dev/null && echo -e "${GREEN}✅ Ping PostgreSQL OK${NC}" || echo -e "${RED}❌ Ping PostgreSQL échoué${NC}"
+    docker exec meal-planner-app wget -q --spider http://postgres:5432 2>/dev/null && echo -e "${GREEN}✅ Connexion PostgreSQL OK${NC}" || echo -e "${RED}❌ Connexion PostgreSQL échouée${NC}"
     
-    # Test Redis
+    # Test Redis avec wget
     echo -e "${YELLOW}🔄 Test Redis:${NC}"
-    docker exec meal-planner-app ping -c 1 redis 2>/dev/null && echo -e "${GREEN}✅ Ping Redis OK${NC}" || echo -e "${RED}❌ Ping Redis échoué${NC}"
+    docker exec meal-planner-app wget -q --spider http://redis:6379 2>/dev/null && echo -e "${GREEN}✅ Connexion Redis OK${NC}" || echo -e "${RED}❌ Connexion Redis échouée${NC}"
     
-    # Test de connexion directe
-    echo -e "${YELLOW}🔗 Test de connexion directe:${NC}"
-    docker exec meal-planner-app nc -z postgres 5432 2>/dev/null && echo -e "${GREEN}✅ Connexion PostgreSQL:5432 OK${NC}" || echo -e "${RED}❌ Connexion PostgreSQL:5432 échouée${NC}"
-    docker exec meal-planner-app nc -z redis 6379 2>/dev/null && echo -e "${GREEN}✅ Connexion Redis:6379 OK${NC}" || echo -e "${RED}❌ Connexion Redis:6379 échouée${NC}"
+    # Test de l'application interne
+    echo -e "${YELLOW}🔗 Test application interne:${NC}"
+    docker exec meal-planner-app wget -q --spider http://localhost:3001 2>/dev/null && echo -e "${GREEN}✅ Application interne OK${NC}" || echo -e "${RED}❌ Application interne échouée${NC}"
 }
 
 # Vérifier les variables d'environnement
@@ -70,7 +69,7 @@ test_application() {
     
     # Test interne
     echo -e "${YELLOW}🔍 Test interne (port 3001):${NC}"
-    docker exec meal-planner-app curl -f -s http://localhost:3001 >/dev/null 2>&1 && echo -e "${GREEN}✅ Application accessible en interne${NC}" || echo -e "${RED}❌ Application non accessible en interne${NC}"
+    docker exec meal-planner-app wget -q --spider http://localhost:3001 2>/dev/null && echo -e "${GREEN}✅ Application accessible en interne${NC}" || echo -e "${RED}❌ Application non accessible en interne${NC}"
     
     # Test externe HTTP
     echo -e "${YELLOW}🌐 Test externe HTTP:${NC}"
