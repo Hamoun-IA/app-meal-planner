@@ -59,6 +59,5 @@ EXPOSE 3001
 
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
-ENV NEXT_PUBLIC_API_URL="http://localhost:3001"
 
 CMD ["node", "server.js"] 
