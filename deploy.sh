@@ -38,12 +38,19 @@ setup_ssl() {
     # Créer le dossier SSL
     mkdir -p ssl
     
-    # Générer un certificat auto-signé pour les tests
+    # Générer un certificat auto-signé valide
     if [ ! -f ssl/cert.pem ]; then
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout ssl/key.pem -out ssl/cert.pem \
-            -subj "/C=FR/ST=France/L=Paris/O=MealPlanner/CN=$DOMAIN"
-        echo "✅ Certificat SSL généré"
+            -keyout ssl/key.pem \
+            -out ssl/cert.pem \
+            -subj "/C=FR/ST=France/L=Paris/O=MealPlanner/CN=$DOMAIN" \
+            -addext "subjectAltName=DNS:$DOMAIN,DNS:localhost,IP:127.0.0.1"
+        
+        # Configurer les permissions
+        chmod 600 ssl/key.pem
+        chmod 644 ssl/cert.pem
+        
+        echo "✅ Certificat SSL généré avec SAN"
     fi
 }
 
