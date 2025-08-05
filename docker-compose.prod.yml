@@ -31,6 +31,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://${DOMAIN:-localhost}/api
+        - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-localhost}
     container_name: meal-planner-app
     environment:
       - DATABASE_URL=postgresql://mealuser:${DB_PASSWORD:-mealpass123}@postgres:5432/mealdb
