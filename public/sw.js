@@ -15,8 +15,8 @@ const STATIC_ASSETS = [
   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/11L-Clic_de_bouton_girly-1754003907888-JLmi4woLnORJ8q2N7JzYlWZDfsP6Tv.mp3",
   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/girlyclick-m35wgd6n66cyCgXLprXDMXMNnmyAQY.mp3",
   "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/fairyclick-hndPdZFszE6Klei4r4ySyWDfckMVR2.mp3",
-  "/icons/icon-192x192.png",
-  "/icons/icon-512x512.png",
+  "/icons/icon-192x192.svg",
+  "/icons/icon-512x512.svg",
 ]
 
 // Ressources critiques pour le fonctionnement hors ligne
@@ -255,15 +255,15 @@ self.addEventListener("push", (event) => {
     event.waitUntil(
       self.registration.showNotification(data.title || "Babounette", {
         body: data.body || "Tu as une nouvelle notification !",
-        icon: "/icons/icon-192x192.png",
-        badge: "/icons/icon-72x72.png",
+        icon: "/icons/icon-192x192.svg",
+        badge: "/icons/icon-72x72.svg",
         tag: "babounette-notification",
         requireInteraction: false,
         actions: [
           {
             action: "open",
             title: "Ouvrir",
-            icon: "/icons/icon-72x72.png",
+            icon: "/icons/icon-72x72.svg",
           },
           {
             action: "close",

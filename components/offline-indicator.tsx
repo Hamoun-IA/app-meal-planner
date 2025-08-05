@@ -1,59 +1,53 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { WifiOff, Wifi } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Wifi, WifiOff } from "lucide-react"
 
 export function OfflineIndicator() {
   const [isOnline, setIsOnline] = useState(true)
-  const [showIndicator, setShowIndicator] = useState(false)
 
   useEffect(() => {
-    const updateOnlineStatus = () => {
-      const online = navigator.onLine
-      setIsOnline(online)
+    const handleOnline = () => setIsOnline(true)
+    const handleOffline = () => setIsOnline(false)
 
-      if (!online) {
-        setShowIndicator(true)
-      } else {
-        // Masquer l'indicateur après 2 secondes quand on revient en ligne
-        setTimeout(() => setShowIndicator(false), 2000)
-      }
-    }
+    // Vérifier l'état initial
+    setIsOnline(navigator.onLine)
 
-    // État initial
-    updateOnlineStatus()
-
-    // Écouter les changements de statut
-    window.addEventListener("online", updateOnlineStatus)
-    window.addEventListener("offline", updateOnlineStatus)
+    window.addEventListener("online", handleOnline)
+    window.addEventListener("offline", handleOffline)
 
     return () => {
-      window.removeEventListener("online", updateOnlineStatus)
-      window.removeEventListener("offline", updateOnlineStatus)
+      window.removeEventListener("online", handleOnline)
+      window.removeEventListener("offline", handleOffline)
     }
   }, [])
 
-  if (!showIndicator) return null
+  if (isOnline) {
+    return null
+  }
 
   return (
-    <div
-      className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-full shadow-lg transition-all duration-300 ${
-        isOnline ? "bg-green-500 text-white animate-fade-in-up" : "bg-red-500 text-white animate-bounce"
-      }`}
-    >
-      <div className="flex items-center space-x-2 text-sm font-medium">
-        {isOnline ? (
-          <>
-            <Wifi className="w-4 h-4" />
-            <span>Connexion rétablie ✨</span>
-          </>
-        ) : (
-          <>
-            <WifiOff className="w-4 h-4" />
-            <span>Mode hors ligne</span>
-          </>
-        )}
-      </div>
+    <div className="fixed top-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-80">
+      <Card className="border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 shadow-lg">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg text-orange-800 flex items-center gap-2">
+              <WifiOff className="h-5 w-5" />
+              Hors ligne
+            </CardTitle>
+          </div>
+          <CardDescription className="text-orange-700">
+            Tu es actuellement hors ligne. Certaines fonctionnalités peuvent être limitées.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex items-center gap-2 text-sm text-orange-600">
+            <Wifi className="h-4 w-4" />
+            Vérifie ta connexion internet
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

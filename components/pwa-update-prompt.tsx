@@ -1,79 +1,116 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { RefreshCw, X } from "lucide-react"
-import { useState, useEffect } from "react"
-import { usePWAUpdate } from "@/hooks/use-pwa-update"
-import { useAppSoundsSimple } from "@/hooks/use-app-sounds-simple"
 
 export function PWAUpdatePrompt() {
-  const { updateAvailable, updateApp } = usePWAUpdate()
-  const [dismissed, setDismissed] = useState(false)
-  const [swSupported, setSWSupported] = useState(false)
-  const { playClickSound } = useAppSoundsSimple()
+  const [showUpdatePrompt, setShowUpdatePrompt] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
-    // Vérifier le support des Service Workers
-    setSWSupported("serviceWorker" in navigator)
+    // Écouter les messages du Service Worker
+    const handleSWMessage = (event: MessageEvent) => {
+      if (event.data && event.data.type === "SW_ACTIVATED") {
+        setShowUpdatePrompt(true)
+      }
+    }
+
+    // Écouter les mises à jour du Service Worker
+    const handleSWUpdate = () => {
+      setShowUpdatePrompt(true)
+    }
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.addEventListener("message", handleSWMessage)
+      navigator.serviceWorker.addEventListener("controllerchange", handleSWUpdate)
+
+      return () => {
+        navigator.serviceWorker.removeEventListener("message", handleSWMessage)
+        navigator.serviceWorker.removeEventListener("controllerchange", handleSWUpdate)
+      }
+    }
   }, [])
 
-  const handleUpdate = () => {
-    playClickSound()
-    updateApp()
+  const handleUpdate = async () => {
+    setIsUpdating(true)
+    
+    try {
+      // Forcer la mise à jour du Service Worker
+      if ("serviceWorker" in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration()
+        if (registration && registration.waiting) {
+          registration.waiting.postMessage({ type: "SKIP_WAITING" })
+        }
+      }
+      
+      // Recharger la page après un court délai
+      setTimeout(() => {
+        window.location.reload()
+      }, 1000)
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour:", error)
+      setIsUpdating(false)
+    }
   }
 
   const handleDismiss = () => {
-    playClickSound()
-    setDismissed(true)
+    setShowUpdatePrompt(false)
   }
 
-  // Ne pas afficher si pas de mise à jour, déjà fermé, ou SW non supporté
-  if (!updateAvailable || dismissed || !swSupported) return null
+  if (!showUpdatePrompt) {
+    return null
+  }
 
   return (
-    <div className="fixed top-4 left-4 right-4 z-50 animate-fade-in-up">
-      <div className="bg-white rounded-2xl shadow-2xl border border-blue-200 p-4 max-w-sm mx-auto">
-        <div className="flex items-start space-x-3">
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-500 rounded-full flex items-center justify-center">
-              <RefreshCw className="w-5 h-5 text-white" />
-            </div>
+    <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-80">
+      <Card className="border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 shadow-lg">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg text-blue-800">🔄 Mise à jour disponible</CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDismiss}
+              className="h-6 w-6 p-0 text-blue-600 hover:text-blue-800"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-800 mb-1">Mise à jour disponible</h3>
-            <p className="text-xs text-gray-600 mb-3">Une nouvelle version de Babounette est prête ! ✨</p>
-
-            <div className="flex space-x-2">
-              <Button
-                onClick={handleUpdate}
-                size="sm"
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-xs h-8"
-              >
-                <RefreshCw className="w-3 h-3 mr-1" />
-                Mettre à jour
-              </Button>
-              <Button
-                onClick={handleDismiss}
-                variant="ghost"
-                size="sm"
-                className="text-gray-500 hover:text-gray-700 text-xs h-8 px-2"
-              >
-                Plus tard
-              </Button>
-            </div>
+          <CardDescription className="text-blue-700">
+            Une nouvelle version de Babounette est disponible !
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <div className="flex gap-2">
+            <Button
+              onClick={handleUpdate}
+              disabled={isUpdating}
+              className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
+            >
+              {isUpdating ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Mise à jour...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Mettre à jour
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleDismiss}
+              className="border-blue-300 text-blue-700 hover:bg-blue-50"
+            >
+              Plus tard
+            </Button>
           </div>
-
-          <Button
-            onClick={handleDismiss}
-            variant="ghost"
-            size="sm"
-            className="flex-shrink-0 text-gray-400 hover:text-gray-600 h-6 w-6 p-0"
-          >
-            <X className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

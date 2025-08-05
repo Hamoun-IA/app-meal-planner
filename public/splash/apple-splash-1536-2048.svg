@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1536" height="2048" viewBox="0 0 1536 2048">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#fdf2f8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fce7f3;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="icon" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f43f5e;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Arrière-plan -->
+  <rect width="1536" height="2048" fill="url(#bg)"/>
+  
+  <!-- Cercle central -->
+  <circle cx="768" cy="1024" r="230.39999999999998" fill="url(#icon)"/>
+  
+  <!-- Icône principale -->
+  <text x="768" y="1100.8" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="122.88" font-weight="bold">💖</text>
+  
+  <!-- Texte du nom -->
+  <text x="768" y="1408" text-anchor="middle" fill="#ec4899" font-family="Arial, sans-serif" font-size="61.44" font-weight="bold">Babounette</text>
+  
+  <!-- Sous-titre -->
+  <text x="768" y="1561.6" text-anchor="middle" fill="#be185d" font-family="Arial, sans-serif" font-size="38.400000000000006">Ton assistante magique</text>
+</svg>
