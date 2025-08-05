@@ -39,7 +39,7 @@ services:
       - DEFAULT_USER_ID=${DEFAULT_USER_ID:-00000000-0000-0000-0000-000000000000}
       - NODE_ENV=production
     ports:
-      - "3000:3000"
+      - "3001:3001"
     depends_on:
       - postgres
       - redis
