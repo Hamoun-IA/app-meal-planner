@@ -67,7 +67,8 @@ export default function GestionProduitsPage() {
   const loadCategories = async () => {
     try {
       setCategoriesLoading(true)
-      const response = await fetch('/api/shopping-items/categories')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const response = await fetch(`${apiUrl}/shopping-items/categories`)
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des catégories')
       }

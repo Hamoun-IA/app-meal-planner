@@ -47,7 +47,8 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
       setIsLoading(true)
       setError(null)
       
-      const response = await fetch('/api/shopping-items')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const response = await fetch(`${apiUrl}/shopping-items`)
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des produits')
       }
@@ -73,7 +74,8 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
       setError(null)
       
       // Trouver la catégorie correspondante
-      const categoriesResponse = await fetch('/api/shopping-items/categories')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const categoriesResponse = await fetch(`${apiUrl}/shopping-items/categories`)
       if (!categoriesResponse.ok) {
         throw new Error('Erreur lors de la récupération des catégories')
       }
@@ -81,7 +83,7 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
       const categoriesResult = await categoriesResponse.json()
       const category = categoriesResult.data.find((cat: any) => cat.name === newProduit.categorie)
       
-      const response = await fetch('/api/shopping-items', {
+      const response = await fetch(`${apiUrl}/shopping-items`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -114,7 +116,7 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
       // Trouver la catégorie correspondante si elle a changé
       let categoryId = undefined
       if (updates.categorie) {
-        const categoriesResponse = await fetch('/api/shopping-items/categories')
+        const categoriesResponse = await fetch(`${apiUrl}/shopping-items/categories`)
         if (categoriesResponse.ok) {
           const categoriesResult = await categoriesResponse.json()
           const category = categoriesResult.data.find((cat: any) => cat.name === updates.categorie)
@@ -122,7 +124,8 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
         }
       }
       
-      const response = await fetch(`/api/shopping-items/${id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const response = await fetch(`${apiUrl}/shopping-items/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +155,8 @@ export function ProduitsProvider({ children }: { children: ReactNode }) {
     try {
       setError(null)
       
-      const response = await fetch(`/api/shopping-items/${id}`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const response = await fetch(`${apiUrl}/shopping-items/${id}`, {
         method: 'DELETE',
       })
 

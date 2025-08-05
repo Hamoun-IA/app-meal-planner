@@ -69,7 +69,8 @@ export function useChat(): UseChatReturn {
     setError(null)
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const response = await fetch(`${apiUrl}/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

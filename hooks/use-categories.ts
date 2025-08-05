@@ -28,7 +28,8 @@ export function useCategories() {
       setLoading(true)
       setError(null)
       
-      const response = await fetch('/api/categories')
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+    const response = await fetch(`${apiUrl}/categories`)
       if (!response.ok) {
         throw new Error('Erreur lors du chargement des catégories')
       }
@@ -48,7 +49,8 @@ export function useCategories() {
     try {
       setError(null)
       
-      const response = await fetch('/api/categories', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+    const response = await fetch(`${apiUrl}/categories`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -55,7 +55,8 @@ export function RecipePopup({ isOpen, onClose, recipe, onRecipeSaved }: RecipePo
 
     setIsSaving(true)
     try {
-      const response = await fetch('/api/recipes/save', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '/api'
+      const response = await fetch(`${apiUrl}/recipes/save`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
