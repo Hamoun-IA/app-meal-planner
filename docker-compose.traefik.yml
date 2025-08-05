@@ -54,7 +54,7 @@ services:
       # Router principal
       - "traefik.http.routers.meal.rule=Host(`${DOMAIN:-appmeal.hamoun.fun}`)"
       - "traefik.http.routers.meal.entrypoints=websecure"
-      - "traefik.http.routers.meal.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.meal.tls=true"
       - "traefik.http.services.meal.loadbalancer.server.port=3001"
       # Redirection HTTP vers HTTPS
       - "traefik.http.routers.meal-http.rule=Host(`${DOMAIN:-appmeal.hamoun.fun}`)"
