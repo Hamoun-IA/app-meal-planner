@@ -5,6 +5,7 @@ import "./globals.css"
 import { SettingsProvider } from "@/contexts/settings-context"
 import { RecettesProvider } from "@/contexts/recettes-context"
 import { ProduitsProvider } from "@/contexts/produits-context"
+import { Toaster } from "@/components/ui/toaster"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -153,7 +154,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <SettingsProvider>
           <RecettesProvider>
-            <ProduitsProvider>{children}</ProduitsProvider>
+            <ProduitsProvider>
+              {children}
+              <Toaster />
+            </ProduitsProvider>
           </RecettesProvider>
         </SettingsProvider>
       </body>
