@@ -70,6 +70,10 @@ chmod +x deploy.sh
 
 # Ou pour un test local
 ./deploy.sh localhost
+
+# Pour tester le déploiement local
+chmod +x test-deployment.sh
+./test-deployment.sh
 ```
 
 ### 4. Vérification du Déploiement

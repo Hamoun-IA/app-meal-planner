@@ -37,7 +37,7 @@ const nextConfig = {
   
   // Optimisations pour PWA
   experimental: {
-    optimizeCss: true,
+    // optimizeCss: true, // Désactivé temporairement pour éviter les problèmes de build
   },
   
   // Compression et optimisations
