@@ -36,7 +36,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 
 # Créer un utilisateur non-root
 RUN groupadd --system --gid 1001 nodejs
-RUN useradd --system --uid 1001 nextjs
+RUN useradd --system --uid 1001 --home-dir /home/nextjs --create-home nextjs
 
 # Copier les fichiers nécessaires
 COPY --from=builder /app/public ./public
@@ -46,6 +46,7 @@ COPY --from=builder /app/prisma ./prisma
 
 # Changer les permissions
 RUN chown -R nextjs:nodejs /app
+RUN chown -R nextjs:nodejs /home/nextjs
 USER nextjs
 
 EXPOSE 3001
