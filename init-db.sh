@@ -41,11 +41,14 @@ wait_for_postgres() {
 apply_migrations() {
     log "Application des migrations Prisma..."
     
-    # Générer le client Prisma
-    docker-compose -f docker-compose.prod.yml exec -T app npx prisma generate
+    # Générer le client Prisma (en tant que root)
+    docker-compose -f docker-compose.prod.yml exec -T --user root app npx prisma generate
     
-    # Appliquer les migrations
-    docker-compose -f docker-compose.prod.yml exec -T app npx prisma migrate deploy
+    # Appliquer les migrations (en tant que root)
+    docker-compose -f docker-compose.prod.yml exec -T --user root app npx prisma migrate deploy
+    
+    # Changer les permissions des fichiers générés
+    docker-compose -f docker-compose.prod.yml exec -T --user root app chown -R nextjs:nodejs /app/node_modules/.prisma
     
     log "✅ Migrations appliquées"
 }
