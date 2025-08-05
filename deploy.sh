@@ -87,6 +87,11 @@ deploy() {
     log "Attente du démarrage des services..."
     sleep 30
     
+    # Initialiser la base de données
+    log "Initialisation de la base de données..."
+    chmod +x init-db.sh
+    ./init-db.sh
+    
     # Vérifier la santé des services
     check_health
 }

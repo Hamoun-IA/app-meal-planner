@@ -2,7 +2,7 @@
 FROM node:18-alpine AS base
 
 # Installer les dépendances nécessaires
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl1.1-compat
 
 # Étape de dépendances
 FROM base AS deps
