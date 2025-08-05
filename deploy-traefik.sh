@@ -40,6 +40,7 @@ check_prerequisites() {
     if ! docker network ls | grep -q "root_default"; then
         echo -e "${RED}❌ Le réseau Traefik 'root_default' n'existe pas${NC}"
         echo -e "${YELLOW}Assurez-vous que Traefik est en cours d'exécution sur votre VPS${NC}"
+        echo -e "${YELLOW}Vérifiez avec: docker network ls${NC}"
         exit 1
     fi
     
