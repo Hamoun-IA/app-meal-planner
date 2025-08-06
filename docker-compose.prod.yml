@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL avec pgvector
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: meal-planner-db-prod
+    environment:
+      POSTGRES_DB: mealdb
+      POSTGRES_USER: mealuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mealpass123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - meal-planner-network
+
+  # Redis pour le cache
+  redis:
+    image: redis:7-alpine
+    container_name: meal-planner-redis-prod
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - meal-planner-network
+
+  # Application Next.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://${DOMAIN:-localhost}/api
+        - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-localhost}
+    container_name: meal-planner-app
+    environment:
+      - DATABASE_URL=postgresql://mealuser:${DB_PASSWORD:-mealpass123}@postgres:5432/mealdb
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEFAULT_USER_ID=${DEFAULT_USER_ID:-00000000-0000-0000-0000-000000000000}
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://${DOMAIN:-localhost}/api
+      - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-localhost}
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./uploads:/app/public/uploads
+      - ./prisma:/app/prisma
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - meal-planner-network
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  meal-planner-network:
+    driver: bridge 
