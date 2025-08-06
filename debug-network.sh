@@ -32,17 +32,17 @@ check_networks() {
 test_connectivity() {
     echo -e "${BLUE}🔌 Test de connectivité depuis meal-planner-app:${NC}"
     
-    # Test PostgreSQL avec wget (disponible dans le conteneur)
+    # Test PostgreSQL avec curl (disponible dans le conteneur)
     echo -e "${YELLOW}📊 Test PostgreSQL:${NC}"
-    docker exec meal-planner-app wget -q --spider http://postgres:5432 2>/dev/null && echo -e "${GREEN}✅ Connexion PostgreSQL OK${NC}" || echo -e "${RED}❌ Connexion PostgreSQL échouée${NC}"
+    docker exec meal-planner-app sh -c "timeout 5 bash -c '</dev/tcp/postgres/5432' 2>/dev/null" && echo -e "${GREEN}✅ Connexion PostgreSQL OK${NC}" || echo -e "${RED}❌ Connexion PostgreSQL échouée${NC}"
     
-    # Test Redis avec wget
+    # Test Redis avec curl
     echo -e "${YELLOW}🔄 Test Redis:${NC}"
-    docker exec meal-planner-app wget -q --spider http://redis:6379 2>/dev/null && echo -e "${GREEN}✅ Connexion Redis OK${NC}" || echo -e "${RED}❌ Connexion Redis échouée${NC}"
+    docker exec meal-planner-app sh -c "timeout 5 bash -c '</dev/tcp/redis/6379' 2>/dev/null" && echo -e "${GREEN}✅ Connexion Redis OK${NC}" || echo -e "${RED}❌ Connexion Redis échouée${NC}"
     
     # Test de l'application interne
     echo -e "${YELLOW}🔗 Test application interne:${NC}"
-    docker exec meal-planner-app wget -q --spider http://localhost:3001 2>/dev/null && echo -e "${GREEN}✅ Application interne OK${NC}" || echo -e "${RED}❌ Application interne échouée${NC}"
+    docker exec meal-planner-app sh -c "timeout 5 bash -c '</dev/tcp/localhost/3001' 2>/dev/null" && echo -e "${GREEN}✅ Application interne OK${NC}" || echo -e "${RED}❌ Application interne échouée${NC}"
 }
 
 # Vérifier les variables d'environnement
@@ -69,7 +69,7 @@ test_application() {
     
     # Test interne
     echo -e "${YELLOW}🔍 Test interne (port 3001):${NC}"
-    docker exec meal-planner-app wget -q --spider http://localhost:3001 2>/dev/null && echo -e "${GREEN}✅ Application accessible en interne${NC}" || echo -e "${RED}❌ Application non accessible en interne${NC}"
+    docker exec meal-planner-app sh -c "timeout 5 bash -c '</dev/tcp/localhost/3001' 2>/dev/null" && echo -e "${GREEN}✅ Application accessible en interne${NC}" || echo -e "${RED}❌ Application non accessible en interne${NC}"
     
     # Test externe HTTP
     echo -e "${YELLOW}🌐 Test externe HTTP:${NC}"
