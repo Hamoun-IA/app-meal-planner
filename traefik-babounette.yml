@@ -1,0 +1,52 @@
+# Configuration Traefik pour Babounette
+# À placer dans votre dossier de configuration Traefik
+
+http:
+  routers:
+    babounette:
+      rule: "Host(`babounette.votre-domaine.com`)"
+      service: babounette
+      tls:
+        certResolver: letsencrypt
+      middlewares:
+        - babounette-headers
+        - babounette-pwa
+        - babounette-security
+
+  services:
+    babounette:
+      loadBalancer:
+        servers:
+          - url: "http://babounette:3000"
+
+  middlewares:
+    # Headers pour le proxy
+    babounette-headers:
+      headers:
+        customRequestHeaders:
+          X-Forwarded-Proto: "https"
+          X-Forwarded-Host: "Host"
+
+    # Headers spécifiques PWA
+    babounette-pwa:
+      headers:
+        customResponseHeaders:
+          Service-Worker-Allowed: "/"
+          Cross-Origin-Embedder-Policy: "require-corp"
+          Cross-Origin-Opener-Policy: "same-origin"
+          Cache-Control: "public, max-age=31536000, immutable"
+
+    # Headers de sécurité
+    babounette-security:
+      headers:
+        customResponseHeaders:
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "DENY"
+          X-XSS-Protection: "1; mode=block"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          Permissions-Policy: "camera=(), microphone=(), geolocation=()"
+
+tls:
+  certificates:
+    - certFile: /path/to/cert.pem
+      keyFile: /path/to/key.pem 
