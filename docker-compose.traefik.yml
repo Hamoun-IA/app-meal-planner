@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL avec pgvector
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: meal-planner-db-prod
+    environment:
+      POSTGRES_DB: mealdb
+      POSTGRES_USER: mealuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mealpass123}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - meal-planner-network
+      - traefik-net
+
+  # Redis pour le cache
+  redis:
+    image: redis:7-alpine
+    container_name: meal-planner-redis-prod
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - meal-planner-network
+      - traefik-net
+
+  # Application Next.js
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://${DOMAIN:-appmeal.hamoun.fun}/api
+        - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-appmeal.hamoun.fun}
+    container_name: meal-planner-app
+    environment:
+      - DATABASE_URL=postgresql://mealuser:${DB_PASSWORD:-mealpass123}@postgres:5432/mealdb
+      - REDIS_URL=redis://redis:6379
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEFAULT_USER_ID=${DEFAULT_USER_ID:-00000000-0000-0000-0000-000000000000}
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=https://${DOMAIN:-appmeal.hamoun.fun}/api
+      - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-appmeal.hamoun.fun}
+    volumes:
+      - ./uploads:/app/public/uploads
+      - ./prisma:/app/prisma
+    labels:
+      # Activation de Traefik
+      - "traefik.enable=true"
+      # Router principal
+      - "traefik.http.routers.meal.rule=Host(`${DOMAIN:-appmeal.hamoun.fun}`)"
+      - "traefik.http.routers.meal.entrypoints=websecure"
+      - "traefik.http.routers.meal.tls=true"
+      - "traefik.http.services.meal.loadbalancer.server.port=3001"
+      # Redirection HTTP vers HTTPS
+      - "traefik.http.routers.meal-http.rule=Host(`${DOMAIN:-appmeal.hamoun.fun}`)"
+      - "traefik.http.routers.meal-http.entrypoints=web"
+      - "traefik.http.routers.meal-http.middlewares=redirect-to-https"
+      # Middleware de redirection
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      # Headers pour le proxy
+      - "traefik.http.middlewares.meal-headers.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.middlewares.meal-headers.headers.customrequestheaders.X-Forwarded-Host=${DOMAIN:-appmeal.hamoun.fun}"
+      - "traefik.http.routers.meal.middlewares=meal-headers"
+      # Headers spécifiques PWA
+      - "traefik.http.middlewares.meal-pwa.headers.customresponseheaders.Service-Worker-Allowed=/"
+      - "traefik.http.middlewares.meal-pwa.headers.customresponseheaders.Cross-Origin-Embedder-Policy=require-corp"
+      - "traefik.http.middlewares.meal-pwa.headers.customresponseheaders.Cross-Origin-Opener-Policy=same-origin"
+      - "traefik.http.routers.meal.middlewares=meal-pwa"
+      # Headers de sécurité
+      - "traefik.http.middlewares.meal-security.headers.customresponseheaders.X-Content-Type-Options=nosniff"
+      - "traefik.http.middlewares.meal-security.headers.customresponseheaders.X-Frame-Options=DENY"
+      - "traefik.http.middlewares.meal-security.headers.customresponseheaders.X-XSS-Protection=1; mode=block"
+      - "traefik.http.middlewares.meal-security.headers.customresponseheaders.Referrer-Policy=strict-origin-when-cross-origin"
+      - "traefik.http.routers.meal.middlewares=meal-security"
+      # Compression
+      - "traefik.http.middlewares.meal-compress.compress=true"
+      - "traefik.http.routers.meal.middlewares=meal-compress"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - meal-planner-network
+      - traefik-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  meal-planner-network:
+    driver: bridge 
+  traefik-net:
+    external:
+      name: root_default 

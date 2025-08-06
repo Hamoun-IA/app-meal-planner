@@ -45,13 +45,15 @@ services:
       - NEXT_PUBLIC_APP_URL=https://${DOMAIN:-localhost}
     ports:
       - "3001:3001"
+    volumes:
+      - ./uploads:/app/public/uploads
+      - ./prisma:/app/prisma
     depends_on:
       - postgres
       - redis
     restart: unless-stopped
     networks:
       - meal-planner-network
-
 volumes:
   postgres_data:
   redis_data:
